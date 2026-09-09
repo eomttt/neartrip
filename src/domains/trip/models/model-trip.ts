@@ -1,0 +1,57 @@
+import { z } from 'zod';
+
+export const categorySchema = z.enum(['restaurant', 'cafe', 'attraction']);
+export type Category = z.infer<typeof categorySchema>;
+export const categoryLabels: Record<Category, string> = {
+  restaurant: '맛집',
+  cafe: '카페',
+  attraction: '갈 만한 곳',
+};
+export const coordinateSchema = z.object({
+  lat: z.number().min(32).max(39.5),
+  lng: z.number().min(124).max(132),
+});
+export const placeSchema = coordinateSchema.extend({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(120),
+  address: z.string().max(250),
+  category: categorySchema,
+  description: z.string().max(300),
+  url: z.string().default(''),
+});
+export type Place = z.infer<typeof placeSchema>;
+export type Coordinate = z.infer<typeof coordinateSchema>;
+export const segmentSchema = z.object({
+  mode: z.enum(['walk', 'bus', 'subway']),
+  seconds: z.number().nonnegative(),
+  meters: z.number().nonnegative(),
+  points: z.array(coordinateSchema),
+  instruction: z.string(),
+  stops: z.number().int().nonnegative().nullable(),
+});
+export type Segment = z.infer<typeof segmentSchema>;
+export const legSchema = z.object({
+  from: placeSchema,
+  to: placeSchema,
+  segments: z.array(segmentSchema),
+  warning: z.string().nullable(),
+});
+export type Leg = z.infer<typeof legSchema>;
+export const itinerarySchema = z.object({
+  places: z.array(placeSchema),
+  legs: z.array(legSchema),
+  demo: z.boolean(),
+});
+export type Itinerary = z.infer<typeof itinerarySchema>;
+export const planRequestSchema = z
+  .object({
+    origin: placeSchema,
+    places: z.array(placeSchema).min(1).max(5),
+    order: z.enum(['nearby', 'manual']).default('nearby'),
+  })
+  .superRefine(({ origin, places }, ctx) => {
+    if (new Set([origin.id, ...places.map((place) => place.id)]).size !== places.length + 1) {
+      ctx.addIssue({ code: 'custom', message: '같은 장소를 중복해서 담을 수 없습니다.' });
+    }
+  });
+export type PlanRequest = z.infer<typeof planRequestSchema>;

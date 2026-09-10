@@ -401,7 +401,7 @@ function Planner({
               <strong>
                 {planner.itinerary.demo
                   ? '점선은 예시 방문 순서예요.'
-                  : '도보는 점선, 대중교통은 실선으로 표시해요.'}
+                  : '도보는 실선, 대중교통은 점선으로 표시해요.'}
               </strong>
             </div>
           )}

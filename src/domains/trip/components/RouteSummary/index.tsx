@@ -1,3 +1,4 @@
+import { Button } from '@/common/design-system/components/Button';
 import {
   ArrowDown,
   ArrowUp,
@@ -53,9 +54,9 @@ export function RouteSummary({
           </h2>
         </div>
         {selected.length > 0 ? (
-          <button className="text-button" onClick={onReset}>
+          <Button variant="ghost" size="sm" className="text-button" onClick={onReset}>
             <RotateCcw size={13} /> 비우기
-          </button>
+          </Button>
         ) : (
           <MapPin size={21} className="muted" />
         )}
@@ -84,26 +85,32 @@ export function RouteSummary({
                   <span>{place.address}</span>
                 </div>
                 <div className="stop-actions">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     aria-label={`${place.name} 앞으로`}
                     disabled={index === 0}
                     onClick={() => onMove(index, -1)}
                   >
                     <ArrowUp size={13} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     aria-label={`${place.name} 뒤로`}
                     disabled={index === selected.length - 1}
                     onClick={() => onMove(index, 1)}
                   >
                     <ArrowDown size={13} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     aria-label={`${place.name} 일정에서 빼기`}
                     onClick={() => onRemove(place)}
                   >
                     <X size={14} />
-                  </button>
+                  </Button>
                 </div>
               </li>
             ))}
@@ -159,9 +166,7 @@ export function RouteSummary({
                         {segment.instruction}
                         <small>
                           {formatMinutes(segment.seconds)}
-                          {segment.mode !== 'walk'
-                            ? ` · 정류장 목록 ${segment.stops ?? '?'}개`
-                            : ''}
+                          {segment.mode !== 'walk' ? ` · ${segment.stops ?? '?'}정거장` : ''}
                         </small>
                       </span>
                     </div>
@@ -172,8 +177,8 @@ export function RouteSummary({
           </details>
         </div>
       ) : null}
-      <button
-        className="primary-button"
+      <Button
+        className="primary-button px-0 text-xs"
         disabled={selected.length === 0 || isPlanning}
         onClick={() => onBuild('nearby')}
       >
@@ -186,11 +191,16 @@ export function RouteSummary({
         )}
         <span>{isPlanning ? '길을 찾아보고 있어요' : '가까운 순서로 동선 짜기'}</span>
         <ArrowUpRight size={18} />
-      </button>
+      </Button>
       {selected.length > 1 ? (
-        <button className="manual-button" disabled={isPlanning} onClick={() => onBuild('manual')}>
+        <Button
+          variant="link"
+          className="manual-button text-xs"
+          disabled={isPlanning}
+          onClick={() => onBuild('manual')}
+        >
           내가 담은 순서대로 길찾기
-        </button>
+        </Button>
       ) : null}
       <p className="route-footnote">
         도보 20분 우선 · 대중교통 최대 5정거장

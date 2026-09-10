@@ -46,6 +46,35 @@ async function setup() {
 }
 
 describe('여행 화면과 예시 API 연결', () => {
+  it('이용 방법 안에서 포커스를 유지하고 Escape로 닫으면 열기 버튼으로 돌아간다', async () => {
+    const user = await setup();
+    const trigger = screen.getByRole('button', { name: '이용 방법' });
+    await user.click(trigger);
+    const dialog = screen.getByRole('dialog', { name: '장소 하나에서 시작하는 작은 여행' });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await user.tab({ shift: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(document.activeElement).toBe(trigger);
+    await user.keyboard('{Enter}');
+    await user.click(screen.getByRole('button', { name: '여행 시작하기' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('검색 반경을 바꾸면 목록을 갱신하고 담아둔 장소는 유지한다', async () => {
+    const user = await setup();
+    await user.click(screen.getByRole('button', { name: '초록 산책길 담기' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: '검색 반경' }), '500');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: '초록 산책길 빼기' })).toBeNull(),
+    );
+    expect(screen.getByRole('button', { name: '초록 산책길 일정에서 빼기' })).toBeTruthy();
+    await user.selectOptions(screen.getByRole('combobox', { name: '검색 반경' }), '1000');
+    expect(await screen.findByRole('button', { name: '초록 산책길 빼기' })).toBeTruthy();
+  });
+
   it('종류를 필터링하고, 선택한 장소의 왕복 동선을 만든다', async () => {
     const user = await setup();
     await user.click(

@@ -1,128 +1,65 @@
+import { useState } from 'react';
 import { Button } from '@/common/design-system/components/Button';
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpRight,
   Bus,
   CircleCheck,
+  ChevronRight,
   TriangleAlert,
   Footprints,
   House,
+  Flag,
   MapPin,
-  RotateCcw,
   TrainFront,
-  X,
 } from 'lucide-react';
 import type { Itinerary, Place } from '../../models/model-trip';
 import { formatDistance, formatMinutes } from '../../utils/route-order';
 
 interface Props {
+  activeRoute?: { legIndex: number; segmentIndex: number | null } | null;
+  onFocusRoute: (legIndex: number, segmentIndex: number | null) => void;
   origin: Place | null;
-  selected: Place[];
+  destination: Place | null;
   itinerary: Itinerary | null;
-  isPlanning: boolean;
-  onRemove: (place: Place) => void;
-  onMove: (index: number, direction: -1 | 1) => void;
-  onReset: () => void;
-  onBuild: (order: 'nearby' | 'manual') => void;
+  onEdit: () => void;
+  initiallyExpanded?: boolean;
 }
 
 export function RouteSummary({
+  activeRoute,
+  onFocusRoute,
   origin,
-  selected,
+  destination,
   itinerary,
-  isPlanning,
-  onRemove,
-  onMove,
-  onReset,
-  onBuild,
+  onEdit,
+  initiallyExpanded = false,
 }: Props) {
+  const [disclosure, setDisclosure] = useState<{ itinerary: Itinerary; open: boolean } | null>(
+    null,
+  );
   const segments = itinerary?.legs.flatMap((leg) => leg.segments) ?? [];
   const hasWarnings = itinerary?.legs.some((leg) => leg.warning) ?? false;
+  const detailsOpen =
+    disclosure?.itinerary === itinerary ? disclosure?.open : initiallyExpanded || hasWarnings;
   const totalSeconds = segments.reduce((sum, segment) => sum + segment.seconds, 0);
   const totalMeters = segments.reduce((sum, segment) => sum + segment.meters, 0);
   return (
     <section className="route-panel" aria-labelledby="route-title">
       <div className="section-heading">
-        <div>
-          <span className="eyebrow">MY LITTLE TRIP</span>
-          <h2 id="route-title">
-            담아둔 하루{' '}
-            <span>
-              {selected.length}
-              <small> / 5</small>
-            </span>
-          </h2>
-        </div>
-        {selected.length > 0 ? (
-          <Button variant="ghost" size="sm" className="text-button" onClick={onReset}>
-            <RotateCcw size={13} /> 비우기
-          </Button>
-        ) : (
-          <MapPin size={21} className="muted" />
-        )}
+        <h2 id="route-title">이동 안내</h2>
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          장소·순서 수정
+        </Button>
       </div>
-      {selected.length === 0 ? (
-        <div className="empty-route">
-          <span className="empty-route-icon">
-            <Footprints size={25} />
-          </span>
-          <p>마음이 가는 곳을 담아보세요.</p>
-          <span>가까운 곳들을 이어 하루를 만들어드릴게요.</span>
-        </div>
-      ) : (
-        <>
-          <div className="route-start">
-            <House size={14} />
-            <span>{origin?.name}</span>
-            <small>출발</small>
-          </div>
-          <ol className="route-list">
-            {selected.map((place, index) => (
-              <li key={place.id}>
-                <span className="stop-number">{index + 1}</span>
-                <div className="stop-copy">
-                  <strong>{place.name}</strong>
-                  <span>{place.address}</span>
-                </div>
-                <div className="stop-actions">
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`${place.name} 앞으로`}
-                    disabled={index === 0}
-                    onClick={() => onMove(index, -1)}
-                  >
-                    <ArrowUp size={13} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`${place.name} 뒤로`}
-                    disabled={index === selected.length - 1}
-                    onClick={() => onMove(index, 1)}
-                  >
-                    <ArrowDown size={13} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`${place.name} 일정에서 빼기`}
-                    onClick={() => onRemove(place)}
-                  >
-                    <X size={14} />
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <div className="route-start route-end">
-            <House size={14} />
-            <span>{origin?.name}</span>
-            <small>돌아오기</small>
-          </div>
-        </>
-      )}
+      <div className="route-start">
+        <House size={14} />
+        <span>{origin?.name}</span>
+        <small>출발</small>
+      </div>
+      <div className="route-start">
+        <Flag size={14} />
+        <span>{destination?.name ?? origin?.name}</span>
+        <small>{destination ? '도착' : '돌아오기'}</small>
+      </div>
       {itinerary ? (
         <div className={`route-result ${hasWarnings ? 'route-incomplete' : ''}`} aria-live="polite">
           <div className="route-result-title">
@@ -142,13 +79,38 @@ export function RouteSummary({
             {formatDistance(totalMeters)}
             {itinerary.demo ? ' · 추정치' : ''}
           </p>
-          <details open={hasWarnings}>
-            <summary>구간별 이동 보기</summary>
+          <Button
+            variant="ghost"
+            className="route-details-toggle h-auto justify-start rounded-none px-0 text-xs"
+            aria-expanded={!!detailsOpen}
+            aria-controls="route-details"
+            onClick={() => setDisclosure({ itinerary, open: !detailsOpen })}
+          >
+            <ChevronRight size={13} /> 구간별 이동 보기
+          </Button>
+          <div
+            id="route-details"
+            className="route-details-scroll"
+            role="region"
+            aria-label="구간별 이동 안내"
+            tabIndex={0}
+            hidden={!detailsOpen}
+          >
+            <p className="route-detail-hint">이동 안내를 누르면 표시점이 경로를 따라 움직여요.</p>
             {itinerary.legs.map((leg, index) => (
               <div className="leg" key={`${leg.from.id}-${leg.to.id}`}>
-                <strong>
+                <Button
+                  variant="ghost"
+                  className="route-leg-trigger h-auto w-full justify-start whitespace-normal px-2 py-2 text-left text-xs"
+                  aria-label={`${index + 1}. ${leg.from.name} → ${leg.to.name} 지도에서 보기`}
+                  aria-pressed={
+                    activeRoute?.legIndex === index && activeRoute.segmentIndex === null
+                  }
+                  onClick={() => onFocusRoute(index, null)}
+                >
+                  <MapPin size={13} />
                   {index + 1}. {leg.from.name} → {leg.to.name}
-                </strong>
+                </Button>
                 {leg.warning ? <p className="warning-text">{leg.warning}</p> : null}
                 {leg.segments.length === 0 ? (
                   leg.warning ? null : (
@@ -156,7 +118,16 @@ export function RouteSummary({
                   )
                 ) : (
                   leg.segments.map((segment, segmentIndex) => (
-                    <div className="segment" key={segmentIndex}>
+                    <Button
+                      variant="ghost"
+                      className="segment h-auto w-full justify-start whitespace-normal px-2 py-2 text-left text-xs"
+                      key={segmentIndex}
+                      aria-label={`${index + 1}-${segmentIndex + 1}. ${segment.instruction} 지도에서 보기`}
+                      aria-pressed={
+                        activeRoute?.legIndex === index && activeRoute.segmentIndex === segmentIndex
+                      }
+                      onClick={() => onFocusRoute(index, segmentIndex)}
+                    >
                       {segment.mode === 'walk' ? (
                         <Footprints size={13} />
                       ) : segment.mode === 'bus' ? (
@@ -171,44 +142,14 @@ export function RouteSummary({
                           {segment.mode !== 'walk' ? ` · ${segment.stops ?? '?'}정거장` : ''}
                         </small>
                       </span>
-                    </div>
+                    </Button>
                   ))
                 )}
               </div>
             ))}
-          </details>
+          </div>
         </div>
       ) : null}
-      <Button
-        className="primary-button px-0 text-xs"
-        disabled={selected.length === 0 || isPlanning}
-        onClick={() => onBuild('nearby')}
-      >
-        {isPlanning ? (
-          <span className="spinner" />
-        ) : (
-          <span className="route-glyph" aria-hidden="true">
-            ⌁
-          </span>
-        )}
-        <span>{isPlanning ? '길을 찾아보고 있어요' : '가까운 순서로 동선 짜기'}</span>
-        <ArrowUpRight size={18} />
-      </Button>
-      {selected.length > 1 ? (
-        <Button
-          variant="link"
-          className="manual-button text-xs"
-          disabled={isPlanning}
-          onClick={() => onBuild('manual')}
-        >
-          내가 담은 순서대로 길찾기
-        </Button>
-      ) : null}
-      <p className="route-footnote">
-        도보 20분 · 대중교통 5정거장 이내 우선
-        <br />
-        방문 순서는 직선거리 기준, 이동 경로는 별도로 조회해요.
-      </p>
     </section>
   );
 }

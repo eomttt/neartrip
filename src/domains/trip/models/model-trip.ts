@@ -46,10 +46,17 @@ export type Itinerary = z.infer<typeof itinerarySchema>;
 export const planRequestSchema = z
   .object({
     origin: placeSchema,
-    places: z.array(placeSchema).min(1).max(5),
+    destination: placeSchema.nullish(),
+    places: z.array(placeSchema).max(5),
     order: z.enum(['nearby', 'manual']).default('nearby'),
   })
-  .superRefine(({ origin, places }, ctx) => {
+  .superRefine(({ origin, destination, places }, ctx) => {
+    if (places.length === 0 && !destination) {
+      ctx.addIssue({ code: 'custom', message: '방문지 또는 도착점을 선택해주세요.' });
+    }
+    if (destination && places.some((place) => place.id === destination.id)) {
+      ctx.addIssue({ code: 'custom', message: '도착점은 방문지와 중복할 수 없습니다.' });
+    }
     if (new Set([origin.id, ...places.map((place) => place.id)]).size !== places.length + 1) {
       ctx.addIssue({ code: 'custom', message: '같은 장소를 중복해서 담을 수 없습니다.' });
     }

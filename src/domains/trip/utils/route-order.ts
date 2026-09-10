@@ -11,12 +11,16 @@ export function distanceMeters(a: Coordinate, b: Coordinate): number {
 }
 
 // 최대 5곳의 순열만 비교해 외부 경로 API 호출 없이 방문 순서를 먼저 정합니다.
-export function orderRoundTrip(origin: Place, places: Place[]): Place[] {
+export function orderRoundTrip(
+  origin: Place,
+  places: Place[],
+  destination: Place = origin,
+): Place[] {
   let bestDistance = Infinity;
   let bestOrder = places;
   function visit(current: Place, remaining: Place[], ordered: Place[], distance: number) {
     if (remaining.length === 0) {
-      const total = distance + distanceMeters(current, origin);
+      const total = distance + distanceMeters(current, destination);
       if (total < bestDistance) {
         bestDistance = total;
         bestOrder = ordered;

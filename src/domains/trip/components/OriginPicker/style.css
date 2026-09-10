@@ -1,0 +1,145 @@
+@layer components {
+  .search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #bccabc;
+    border-radius: 10px;
+    margin-top: 24px;
+    padding: 5px 9px 5px 13px;
+    background: #fff;
+    box-shadow: 0 3px 10px #263c3205;
+  }
+  .search-form > svg {
+    color: #77907a;
+  }
+  .search-form input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    background: none;
+    padding: 12px 0;
+    font-size: 12px;
+    color: var(--ink);
+    outline: none;
+  }
+  .search-form input::placeholder {
+    color: #9ba396;
+  }
+  .search-form:focus-within {
+    outline: 2px solid #7f9f78;
+    outline-offset: 2px;
+  }
+  .search-form input:focus-visible {
+    outline: none;
+  }
+  .search-form button {
+    background: var(--green);
+    color: white;
+    width: 31px;
+    height: 31px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    flex-shrink: 0;
+  }
+  .search-results {
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 24px #203e3110;
+    border-radius: 10px;
+    padding: 13px;
+    margin-top: 7px;
+    background: #fff;
+  }
+  .search-results-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+  .search-results > p {
+    font-size: 12px;
+    padding: 14px 0;
+    color: var(--muted-foreground);
+    line-height: 1.8;
+  }
+  .search-result {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+    text-align: left;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-result:hover {
+    color: var(--green);
+    background: #f8faf3;
+  }
+  .search-result > span {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .search-result strong {
+    font-size: 12px;
+  }
+  .search-result small {
+    font-size: 10px;
+    color: var(--muted-foreground);
+  }
+  .origin-card {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    background: #f0f3e9;
+    border-radius: 9px;
+    padding: 14px 13px;
+    margin-top: 12px;
+    border: 1px solid #e4e9d9;
+  }
+  .origin-icon {
+    background: #e1e8d5;
+    color: var(--green);
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+  }
+  .origin-card > div {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .origin-card small {
+    font-size: 10px;
+    color: #798970;
+  }
+  .origin-card strong {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .origin-check {
+    color: #6d8560;
+  }
+  .origin-placeholder {
+    padding: 18px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+  }
+  @media (max-width: 680px) {
+    .search-form {
+      margin-top: 19px;
+    }
+    .origin-card {
+      padding: 11px;
+    }
+  }
+}

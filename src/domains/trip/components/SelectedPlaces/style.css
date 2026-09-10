@@ -1,0 +1,72 @@
+@layer components {
+  .route-list {
+    padding: 0 0 0 8px;
+    margin: 0;
+    list-style: none;
+  }
+  .route-list li {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    position: relative;
+    padding: 12px 0 12px 10px;
+    border-left: 1px dashed #cad4bc;
+    min-height: 60px;
+  }
+  .stop-number {
+    display: grid;
+    place-items: center;
+    background: #e3ebd6;
+    color: #577845;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    width: 23px;
+    height: 23px;
+    flex-shrink: 0;
+  }
+  .stop-copy {
+    min-width: 0;
+    flex: 1;
+  }
+  .stop-copy strong {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stop-copy > span {
+    font-size: 9px;
+    color: #96a08b;
+    display: block;
+    margin-top: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stop-actions {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+  @media (max-width: 680px) {
+    .stop-actions {
+      gap: 5px;
+    }
+    .stop-actions button {
+      padding: 7px;
+    }
+    .stop-copy strong {
+      font-size: 12px;
+    }
+  }
+  .selected-places {
+    margin-top: 8px;
+  }
+  .selected-places-dialog .route-list li {
+    min-height: 44px;
+    padding-block: 4px;
+  }
+}

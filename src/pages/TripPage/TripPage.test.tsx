@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Server } from 'node:http';
@@ -307,6 +307,47 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     await user.click(screen.getByRole('button', { name: '닫기' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('동선 생성 중 선택을 바꾸면 이전 응답을 버리고 새 선택으로 다시 만든다', async () => {
+    const user = await setup();
+    await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));
+    const currentFetch = globalThis.fetch;
+    let resolvePlan: ((response: Response) => void) | undefined;
+    const pending = new Promise<Response>((resolve) => {
+      resolvePlan = resolve;
+    });
+    let firstRequest = true;
+    const delayed = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      if (String(input).endsWith('/api/plan') && firstRequest) {
+        firstRequest = false;
+        return pending;
+      }
+      return currentFetch(input, init);
+    });
+    try {
+      await user.click(screen.getByRole('button', { name: /^순서대로 동선 짜기/ }));
+      await screen.findByRole('button', { name: '길을 찾아보고 있어요' });
+      await user.click(screen.getByRole('button', { name: '오후의 커피 담기' }));
+      expect(
+        screen.getByRole('button', { name: /^순서대로 동선 짜기/ }).hasAttribute('disabled'),
+      ).toBe(false);
+      await act(async () => {
+        if (!resolvePlan) throw new Error('대기 중인 요청이 없습니다.');
+        resolvePlan(new Response(JSON.stringify({ demo: true, places: [], legs: [] })));
+        await pending;
+      });
+      expect(screen.getByText(/담은 장소 2 \/ 5/)).toBeTruthy();
+      expect(screen.getByRole('button', { name: '2단계 동선 보기' }).hasAttribute('disabled')).toBe(
+        true,
+      );
+      expect(screen.queryByRole('alert')).toBeNull();
+      await build(user);
+      await showDetails(user);
+      expect(screen.getByText('2. 작은 식탁 → 오후의 커피')).toBeTruthy();
+    } finally {
+      delayed.mockRestore();
+    }
   });
 
   it('검색 결과가 없는 경우를 안내한다', async () => {

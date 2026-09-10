@@ -1,9 +1,9 @@
+import './common/design-system/shadcn.css';
+import './common/design-system/global.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TripPage } from './pages/TripPage';
-import './common/design-system/shadcn.css';
-import './common/design-system/global.css';
 
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },

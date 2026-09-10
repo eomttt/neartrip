@@ -105,7 +105,7 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
             strokeColor:
               segment.mode === 'walk' ? '#245d46' : segment.mode === 'bus' ? '#b66b3d' : '#4264af',
             strokeOpacity: 0.9,
-            strokeStyle: segment.mode === 'walk' ? 'shortdash' : 'solid',
+            strokeStyle: segment.mode === 'walk' ? 'solid' : 'shortdash',
           }),
         );
       }

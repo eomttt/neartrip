@@ -185,8 +185,105 @@ describe('카카오 실응답에서 확인한 대중교통 경계', () => {
         expect(leg.segments.reduce((sum, segment) => sum + segment.seconds, 0)).toBe(870);
       } else {
         expect(leg.warning).not.toBeNull();
-        expect(leg.segments).toEqual([]);
+        expect(leg.segments.map((segment) => segment.mode)).toEqual(['walk']);
+        expect(leg.warning).toContain('20분');
       }
     },
   );
+});
+
+const from = { ...demoOrigin, lat: 37.54, lng: 127.05 };
+const to = { ...demoOrigin, id: 'destination', lat: 37.55, lng: 127.06 };
+
+function mockRoutes(walk: unknown, steps: ReturnType<typeof transitStep>[]) {
+  vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(apiResponse(walk))
+    .mockResolvedValueOnce(
+      apiResponse({
+        status: 'OK',
+        routes: steps.map((step) => ({
+          properties: { totalTime: step.properties.time },
+          steps: [step],
+        })),
+      }),
+    );
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+describe('권장 조건을 넘는 경로도 경고와 함께 표시', () => {
+  it('대중교통이 없으면 20분이 넘는 실제 도보 경로를 유지한다', async () => {
+    mockRoutes(walkResponse(1500), []);
+    const leg = await getLeg(from, to);
+    expect(leg.warning).toContain('25분');
+    expect(leg.segments).toEqual(walkResponseToSegments(walkResponse(1500)));
+  });
+
+  it('6정거장 경로의 좌표와 이동 안내를 보존한다', async () => {
+    const step = transitStep(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+    mockRoutes({ status: 'NO_RESULTS' }, [step]);
+    const leg = await getLeg(from, to);
+    expect(leg.warning).toContain('6정거장');
+    expect(leg.segments[0]).toMatchObject({
+      mode: 'subway',
+      stops: 6,
+      instruction: '2호선',
+      points: [
+        { lng: 127.05, lat: 37.54 },
+        { lng: 127.06, lat: 37.55 },
+      ],
+    });
+  });
+
+  it('더 빠른 초과 경로가 있어도 권장 조건에 맞는 대중교통을 우선한다', async () => {
+    const short = transitStep(['A', 'B']);
+    short.properties.time = 900;
+    mockRoutes(walkResponse(1500), [transitStep(['A', 'B', 'C', 'D', 'E', 'F', 'G']), short]);
+    const leg = await getLeg(from, to);
+    expect(leg.warning).toBeNull();
+    expect(leg.segments[0]?.stops).toBe(1);
+    expect(leg.segments[0]?.seconds).toBe(900);
+  });
+
+  it('권장 조건에 맞는 경로가 없으면 완성된 후보 중 이동 시간이 짧은 경로를 쓴다', async () => {
+    mockRoutes(walkResponse(1500), [transitStep(['A', 'B', 'C', 'D', 'E', 'F', 'G'])]);
+    const leg = await getLeg(from, to);
+    expect(leg.segments[0]?.mode).toBe('subway');
+    expect(leg.warning).toContain('6정거장');
+  });
+
+  it('연결 도보 합계가 20분을 넘어도 도보와 대중교통을 함께 유지한다', async () => {
+    mockRoutes({ status: 'NO_RESULTS' }, [transitStep(['A', 'B'])]).mockImplementation(async () =>
+      apiResponse(walkResponse(601)),
+    );
+    const leg = await getLeg(demoOrigin, { ...to, lat: 37.56 });
+    expect(leg.segments.map((segment) => segment.mode)).toEqual(['walk', 'subway', 'walk']);
+    expect(leg.warning).toContain('21분');
+  });
+
+  it('연결 도보를 찾지 못하면 조회된 대중교통 선은 남기고 누락을 알린다', async () => {
+    mockRoutes({ status: 'NO_RESULTS' }, [transitStep(['A', 'B'])]).mockImplementation(async () =>
+      apiResponse({ status: 'NO_RESULTS' }),
+    );
+    const leg = await getLeg(demoOrigin, { ...to, lat: 37.56 });
+    expect(leg.segments.map((segment) => segment.mode)).toEqual(['subway']);
+    expect(leg.warning).toContain('일부 연결 도보');
+  });
+
+  it('정거장 수를 모르는 경우에도 경로를 유지하고 확인 불가를 알린다', async () => {
+    mockRoutes({ status: 'NO_RESULTS' }, [transitStep([])]);
+    const leg = await getLeg(from, to);
+    expect(leg.segments[0]?.stops).toBeNull();
+    expect(leg.segments[0]?.points).toHaveLength(2);
+    expect(leg.warning).toContain('정거장 수를 확인하지 못했어요');
+  });
+
+  it('실제 경로가 전혀 없을 때는 가짜 직선을 만들지 않는다', async () => {
+    mockRoutes({ status: 'NO_RESULTS' }, []);
+    const leg = await getLeg(from, to);
+    expect(leg.segments).toEqual([]);
+    expect(leg.warning).toContain('이동 경로를 찾지 못했어요');
+  });
 });

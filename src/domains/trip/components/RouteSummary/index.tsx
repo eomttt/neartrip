@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   Bus,
   CircleCheck,
+  TriangleAlert,
   Footprints,
   House,
   MapPin,
@@ -37,7 +38,7 @@ export function RouteSummary({
   onBuild,
 }: Props) {
   const segments = itinerary?.legs.flatMap((leg) => leg.segments) ?? [];
-  const incomplete = itinerary?.legs.some((leg) => leg.warning) ?? false;
+  const hasWarnings = itinerary?.legs.some((leg) => leg.warning) ?? false;
   const totalSeconds = segments.reduce((sum, segment) => sum + segment.seconds, 0);
   const totalMeters = segments.reduce((sum, segment) => sum + segment.meters, 0);
   return (
@@ -123,35 +124,36 @@ export function RouteSummary({
         </>
       )}
       {itinerary ? (
-        <div className={`route-result ${incomplete ? 'route-incomplete' : ''}`} aria-live="polite">
+        <div className={`route-result ${hasWarnings ? 'route-incomplete' : ''}`} aria-live="polite">
           <div className="route-result-title">
-            <CircleCheck size={17} />
+            {hasWarnings ? <TriangleAlert size={17} /> : <CircleCheck size={17} />}
             <strong>
-              {incomplete
-                ? '이동이 어려운 구간이 있어요'
+              {hasWarnings
+                ? '동선을 만들었어요 · 주의 구간 포함'
                 : itinerary.demo
                   ? '예시 동선을 만들었어요'
                   : '오늘의 동선이 준비됐어요'}
             </strong>
           </div>
           <p>
-            {incomplete ? '확인된 구간만 합산 · ' : '이동만 · '}
+            {hasWarnings ? '표시된 경로 합산 · ' : '이동만 · '}
             {totalSeconds ? formatMinutes(totalSeconds) : '0분'}
             <span>·</span>
             {formatDistance(totalMeters)}
             {itinerary.demo ? ' · 추정치' : ''}
           </p>
-          <details>
+          <details open={hasWarnings}>
             <summary>구간별 이동 보기</summary>
             {itinerary.legs.map((leg, index) => (
               <div className="leg" key={`${leg.from.id}-${leg.to.id}`}>
                 <strong>
                   {index + 1}. {leg.from.name} → {leg.to.name}
                 </strong>
-                {leg.warning ? (
-                  <p className="warning-text">{leg.warning}</p>
-                ) : leg.segments.length === 0 ? (
-                  <p>같은 위치 · 이동 없음</p>
+                {leg.warning ? <p className="warning-text">{leg.warning}</p> : null}
+                {leg.segments.length === 0 ? (
+                  leg.warning ? null : (
+                    <p>같은 위치 · 이동 없음</p>
+                  )
                 ) : (
                   leg.segments.map((segment, segmentIndex) => (
                     <div className="segment" key={segmentIndex}>
@@ -203,7 +205,7 @@ export function RouteSummary({
         </Button>
       ) : null}
       <p className="route-footnote">
-        도보 20분 우선 · 대중교통 최대 5정거장
+        도보 20분 · 대중교통 5정거장 이내 우선
         <br />
         방문 순서는 직선거리 기준, 이동 경로는 별도로 조회해요.
       </p>

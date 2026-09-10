@@ -217,17 +217,18 @@ async function completeTransitWalks(
   from: Coordinate,
   to: Coordinate,
   segments: Segment[],
-): Promise<Segment[] | null> {
+): Promise<{ segments: Segment[]; connected: boolean }> {
   const complete: Segment[] = [];
+  let connected = true;
   let current = from;
   for (const segment of segments) {
     const start = segment.points[0];
     const end = segment.points.at(-1);
-    if (!start || !end) return null;
+    if (!start || !end) return { segments, connected: false };
     // 교통 경로와 장소 좌표 사이의 10m 이하 오차는 같은 지점으로 봅니다.
     if (distanceMeters(current, start) > 10) {
       const connection = await getWalkSegments(current, start);
-      if (connection.length === 0) return null;
+      if (connection.length === 0) connected = false;
       complete.push(...connection);
     }
     complete.push(segment);
@@ -235,30 +236,74 @@ async function completeTransitWalks(
   }
   if (distanceMeters(current, to) > 10) {
     const connection = await getWalkSegments(current, to);
-    if (connection.length === 0) return null;
+    if (connection.length === 0) connected = false;
     complete.push(...connection);
   }
-  return isShortTransit(complete) ? complete : null;
+  return { segments: complete, connected };
+}
+
+function totalSeconds(segments: Segment[]): number {
+  return segments.reduce((sum, segment) => sum + segment.seconds, 0);
+}
+
+function routeWarning(segments: Segment[], connected: boolean): string | null {
+  const warnings: string[] = [];
+  const walking = segments.filter((segment) => segment.mode === 'walk');
+  const transit = segments.filter((segment) => segment.mode !== 'walk');
+  if (totalSeconds(walking) > 20 * 60) {
+    warnings.push(
+      `도보 이동이 ${Math.ceil(totalSeconds(walking) / 60)}분으로 권장 기준인 20분을 넘어요.`,
+    );
+  }
+  if (transit.some((segment) => segment.stops === null)) {
+    warnings.push('대중교통 정거장 수를 확인하지 못했어요.');
+  } else {
+    const stops = transit.reduce((sum, segment) => sum + (segment.stops ?? 0), 0);
+    if (stops > 5) warnings.push(`대중교통이 ${stops}정거장으로 권장 기준인 5정거장을 넘어요.`);
+  }
+  if (!connected) warnings.push('일부 연결 도보를 찾지 못해 확인된 경로만 표시해요.');
+  return warnings.length > 0 ? warnings.join(' ') : null;
 }
 
 export async function getLeg(from: Place, to: Place): Promise<Leg> {
   if (from.lat === to.lat && from.lng === to.lng) return { from, to, segments: [], warning: null };
   const walk = await getWalkSegments(from, to);
-  if (walk.length > 0 && walk.reduce((sum, segment) => sum + segment.seconds, 0) <= 20 * 60) {
+  if (walk.length > 0 && totalSeconds(walk) <= 20 * 60) {
     return { from, to, segments: walk, warning: null };
   }
   const candidates = transitResponseToCandidates(
     await requestKakao('/v2/routing/publictraffic', routeParams(from, to)),
   );
-  for (const candidate of candidates.filter(isShortTransit)) {
+  let fallback = walk.length > 0 ? { segments: walk, connected: true } : null;
+  // 권장 조건에 맞는 경로를 우선하고, 없으면 조회된 경로를 경고와 함께 유지합니다.
+  for (const candidate of candidates.toSorted(
+    (a, b) => Number(isShortTransit(b)) - Number(isShortTransit(a)),
+  )) {
     const transit = await completeTransitWalks(from, to, candidate);
-    if (transit) return { from, to, segments: transit, warning: null };
+    if (transit.connected && isShortTransit(transit.segments)) {
+      return { from, to, segments: transit.segments, warning: null };
+    }
+    if (
+      !fallback ||
+      (transit.connected && !fallback.connected) ||
+      (transit.connected === fallback.connected &&
+        totalSeconds(transit.segments) < totalSeconds(fallback.segments))
+    ) {
+      fallback = transit;
+    }
+  }
+  if (fallback) {
+    return {
+      from,
+      to,
+      segments: fallback.segments,
+      warning: routeWarning(fallback.segments, fallback.connected),
+    };
   }
   return {
     from,
     to,
     segments: [],
-    warning:
-      '도보 20분 또는 대중교통 5정거장 이내의 경로를 확인하지 못했어요. 장소를 바꾸거나 순서를 조정해주세요.',
+    warning: '이 구간의 이동 경로를 찾지 못했어요. 장소나 방문 순서를 확인해주세요.',
   };
 }

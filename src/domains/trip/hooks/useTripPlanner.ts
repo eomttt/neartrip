@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Itinerary, Place } from '../models/model-trip';
-import { requestPlan } from '../queries/searchTripQueries';
+import { useMutation } from '@tanstack/react-query';
+import { postTripPlanMutations } from '../queries/postTripPlanMutations';
 
 export function useTripPlanner(initialOrigin: Place | null) {
   const [origin, setOrigin] = useState(initialOrigin);
@@ -8,7 +9,7 @@ export function useTripPlanner(initialOrigin: Place | null) {
   const [selected, setSelected] = useState<Place[]>([]);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [error, setError] = useState('');
-  const [isPlanning, setIsPlanning] = useState(false);
+  const planMutation = useMutation(postTripPlanMutations.create());
   const requestRef = useRef<AbortController | null>(null);
   useEffect(() => () => requestRef.current?.abort(), []);
 
@@ -16,7 +17,7 @@ export function useTripPlanner(initialOrigin: Place | null) {
     requestRef.current?.abort();
     setItinerary(null);
     setError('');
-    setIsPlanning(false);
+    planMutation.reset();
   }
   function changeOrigin(place: Place) {
     clearRoute();
@@ -64,12 +65,11 @@ export function useTripPlanner(initialOrigin: Place | null) {
     clearRoute();
     const controller = new AbortController();
     requestRef.current = controller;
-    setIsPlanning(true);
     try {
-      const result = await requestPlan(
-        { origin, destination, places: selected, order: 'manual' },
-        controller.signal,
-      );
+      const result = await planMutation.mutateAsync({
+        body: { origin, destination, places: selected, order: 'manual' },
+        signal: controller.signal,
+      });
       if (controller.signal.aborted) return;
       setSelected(result.places);
       setItinerary(result);
@@ -79,8 +79,6 @@ export function useTripPlanner(initialOrigin: Place | null) {
         setError(
           cause instanceof Error ? cause.message : '동선을 만들지 못했어요. 다시 시도해주세요.',
         );
-    } finally {
-      if (!controller.signal.aborted) setIsPlanning(false);
     }
   }
   return {
@@ -89,7 +87,7 @@ export function useTripPlanner(initialOrigin: Place | null) {
     selected,
     itinerary,
     error,
-    isPlanning,
+    isPlanning: planMutation.isPending,
     changeOrigin,
     changeDestination,
     togglePlace,

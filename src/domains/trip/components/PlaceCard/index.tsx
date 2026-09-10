@@ -1,3 +1,4 @@
+import './style.css';
 import { Button } from '@/common/design-system/components/Button';
 import { Check, Coffee, ExternalLink, Footprints, Leaf, Plus, UtensilsCrossed } from 'lucide-react';
 import { categoryLabels, type Place } from '../../models/model-trip';

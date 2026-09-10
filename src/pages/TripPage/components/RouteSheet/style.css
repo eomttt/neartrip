@@ -1,0 +1,44 @@
+@layer components {
+  .map-next-action {
+    position: absolute;
+    bottom: 32px;
+    left: 20px;
+    right: 20px;
+    z-index: 4;
+  }
+  .map-next-action button {
+    min-height: 44px;
+    box-shadow: 0 2px 12px #263c3226;
+  }
+  .route-sheet .route-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .route-sheet .section-heading {
+    padding-right: 24px;
+  }
+  .route-sheet .route-start {
+    padding-block: 8px;
+  }
+  .route-sheet .route-start span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .route-sheet .route-result,
+  .route-sheet .route-result:has([aria-expanded='true']) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 0;
+  }
+  .route-sheet .route-details-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overscroll-behavior-y: contain;
+  }
+}

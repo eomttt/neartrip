@@ -1,0 +1,29 @@
+@layer components {
+  .bottom-sheet[data-state='open'] {
+    animation: sheet-rise 240ms ease-out;
+  }
+  .bottom-sheet[data-state='closed'] {
+    animation: sheet-fall 180ms ease-in;
+  }
+  @keyframes sheet-rise {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes sheet-fall {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bottom-sheet[data-state] {
+      animation: none;
+    }
+  }
+}

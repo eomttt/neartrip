@@ -1,3 +1,4 @@
+import './style.css';
 import { useState } from 'react';
 import { Button } from '@/common/design-system/components/Button';
 import {

@@ -12,7 +12,7 @@ import {
   DialogDescription,
 } from '@/common/design-system/components/Dialog';
 import type { Place } from '../../models/model-trip';
-import { searchTripQueries } from '../../queries/searchTripQueries';
+import { tripQueries } from '../../queries/tripQueries';
 
 interface Props {
   value: Place | null;
@@ -23,7 +23,7 @@ export function DestinationPicker({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
-  const search = useQuery(searchTripQueries.places(query));
+  const search = useQuery(tripQueries.search(query));
 
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {

@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import type { Category, Leg, Place, Segment } from '../src/domains/trip/models/model-trip';
+import type {
+  Category,
+  Coordinate,
+  Leg,
+  Place,
+  Segment,
+} from '../src/domains/trip/models/model-trip';
+import { distanceMeters } from '../src/domains/trip/utils/route-order';
 
 export class ProviderError extends Error {
   constructor(
@@ -136,7 +143,7 @@ const transitResponseSchema = z.object({
     .optional(),
 });
 
-function routeParams(from: Place, to: Place) {
+function routeParams(from: Coordinate, to: Coordinate) {
   return {
     start_x: String(from.lng),
     start_y: String(from.lat),
@@ -177,12 +184,12 @@ export function transitResponseToCandidates(value: unknown): Segment[][] {
         seconds: step.properties.time,
         meters: step.properties.distance,
         instruction: step.properties.guidance,
-        // 실응답으로 승하차 포함 규칙을 확인하기 전에는 목록 전체를 세어 보수적으로 제한합니다.
+        // 실응답의 stops는 승차·하차 지점을 모두 포함하므로 이동 정거장은 목록 길이에서 1을 뺍니다.
         stops:
           step.properties.type === 'WALKING'
             ? 0
-            : step.properties.stops?.length
-              ? step.properties.stops.length
+            : step.properties.stops && step.properties.stops.length >= 2
+              ? step.properties.stops.length - 1
               : null,
         points: step.path.points.map(([lng, lat]) => ({ lng, lat })),
       })),
@@ -202,19 +209,51 @@ export function isShortTransit(segments: Segment[]): boolean {
   );
 }
 
+async function getWalkSegments(from: Coordinate, to: Coordinate): Promise<Segment[]> {
+  return walkResponseToSegments(await requestKakao('/v2/routing/walk', routeParams(from, to)));
+}
+
+async function completeTransitWalks(
+  from: Coordinate,
+  to: Coordinate,
+  segments: Segment[],
+): Promise<Segment[] | null> {
+  const complete: Segment[] = [];
+  let current = from;
+  for (const segment of segments) {
+    const start = segment.points[0];
+    const end = segment.points.at(-1);
+    if (!start || !end) return null;
+    // 교통 경로와 장소 좌표 사이의 10m 이하 오차는 같은 지점으로 봅니다.
+    if (distanceMeters(current, start) > 10) {
+      const connection = await getWalkSegments(current, start);
+      if (connection.length === 0) return null;
+      complete.push(...connection);
+    }
+    complete.push(segment);
+    current = end;
+  }
+  if (distanceMeters(current, to) > 10) {
+    const connection = await getWalkSegments(current, to);
+    if (connection.length === 0) return null;
+    complete.push(...connection);
+  }
+  return isShortTransit(complete) ? complete : null;
+}
+
 export async function getLeg(from: Place, to: Place): Promise<Leg> {
   if (from.lat === to.lat && from.lng === to.lng) return { from, to, segments: [], warning: null };
-  const walk = walkResponseToSegments(
-    await requestKakao('/v2/routing/walk', routeParams(from, to)),
-  );
+  const walk = await getWalkSegments(from, to);
   if (walk.length > 0 && walk.reduce((sum, segment) => sum + segment.seconds, 0) <= 20 * 60) {
     return { from, to, segments: walk, warning: null };
   }
   const candidates = transitResponseToCandidates(
     await requestKakao('/v2/routing/publictraffic', routeParams(from, to)),
   );
-  const transit = candidates.find(isShortTransit);
-  if (transit) return { from, to, segments: transit, warning: null };
+  for (const candidate of candidates.filter(isShortTransit)) {
+    const transit = await completeTransitWalks(from, to, candidate);
+    if (transit) return { from, to, segments: transit, warning: null };
+  }
   return {
     from,
     to,

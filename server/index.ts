@@ -3,7 +3,9 @@ import express from 'express';
 import { resolve } from 'node:path';
 import { createApp } from './app';
 
-dotenv.config({ path: ['.env.local', '.env'], quiet: true });
+if (process.env.NEARTRIP_ENV_LOADED !== 'true') {
+  dotenv.config({ path: ['.env.local', '.env'], quiet: true });
+}
 const app = createApp();
 app.use(express.static(resolve('dist')));
 app.get('/{*path}', (_request, response) => response.sendFile(resolve('dist/index.html')));

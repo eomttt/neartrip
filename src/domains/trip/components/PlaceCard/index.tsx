@@ -1,3 +1,4 @@
+import { Button } from '@/common/design-system/components/Button';
 import { Check, Coffee, Footprints, Leaf, Plus, UtensilsCrossed } from 'lucide-react';
 import { categoryLabels, type Place } from '../../models/model-trip';
 import { distanceMeters, formatDistance } from '../../utils/route-order';
@@ -30,15 +31,17 @@ export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect }: P
           <Footprints size={12} /> 직선 {formatDistance(distanceMeters(origin, place))}
         </span>
       </div>
-      <button
-        className={`add-place ${isSelected ? 'added' : ''}`}
+      <Button
+        variant={isSelected ? 'default' : 'outline'}
+        size="icon-sm"
+        className="add-place rounded-full"
         aria-label={`${place.name} ${isSelected ? '빼기' : '담기'}`}
         aria-pressed={isSelected}
         disabled={isDisabled && !isSelected}
         onClick={() => onSelect(place)}
       >
         {isSelected ? <Check size={17} /> : <Plus size={17} />}
-      </button>
+      </Button>
     </article>
   );
 }

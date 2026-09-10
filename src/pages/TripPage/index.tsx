@@ -1,3 +1,16 @@
+import { Input } from '@/common/design-system/components/Input';
+import { NativeSelect, NativeSelectOption } from '@/common/design-system/components/NativeSelect';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/common/design-system/components/Dialog';
+import { Button } from '@/common/design-system/components/Button';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -39,7 +52,7 @@ export function TripPage() {
         {config.error ? (
           <>
             <p role="alert">서버에 연결하지 못했어요. 앱이 실행 중인지 확인해주세요.</p>
-            <button onClick={() => config.refetch()}>다시 연결하기</button>
+            <Button onClick={() => config.refetch()}>다시 연결하기</Button>
           </>
         ) : (
           <p role="status">오늘의 작은 여행을 준비하고 있어요.</p>
@@ -104,26 +117,37 @@ function Planner({
           </span>
         </a>
         <span className="header-tagline">멀리 떠나지 않아도, 여행</span>
-        <button
-          className="help-button"
-          onClick={() => setShowHelp((current) => !current)}
-          aria-expanded={showHelp}
-        >
-          <Compass size={16} /> 이용 방법
-        </button>
+        <Dialog open={showHelp} onOpenChange={setShowHelp}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="help-button">
+              <Compass size={16} /> 이용 방법
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="pr-5 leading-relaxed">
+                장소 하나에서 시작하는 작은 여행
+              </DialogTitle>
+              <DialogDescription className="leading-relaxed">
+                출발할 장소를 검색하고 주변에서 마음에 드는 곳을 5곳까지 담아주세요.
+              </DialogDescription>
+            </DialogHeader>
+            <ol className="list-decimal space-y-3 pl-5 text-sm leading-relaxed">
+              <li>숙소·역 이름·주소로 출발 장소를 검색해요.</li>
+              <li>반경과 종류를 고르고, 목록이나 지도에서 가고 싶은 곳을 담아요.</li>
+              <li>동선을 만든 뒤 화살표로 방문 순서를 바꾸고 다시 길을 찾아요.</li>
+            </ol>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              시작점으로 돌아오는 동선이에요. 날짜·영업시간·체류시간은 포함되지 않아요.
+            </p>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button>여행 시작하기</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </header>
-      {showHelp ? (
-        <section className="help-banner">
-          <strong>장소 하나에서 시작하는 작은 여행</strong>
-          <p>
-            출발할 장소를 검색하고 주변에서 마음에 드는 곳을 5곳까지 담아주세요. 동선을 만든 뒤
-            화살표로 순서를 바꿀 수 있어요. 날짜·영업시간·체류시간은 이번 버전에 포함되지 않습니다.
-          </p>
-          <button aria-label="이용 방법 닫기" onClick={() => setShowHelp(false)}>
-            <X size={17} />
-          </button>
-        </section>
-      ) : null}
       {demo ? (
         <div className="demo-banner">
           <Info size={14} />
@@ -168,24 +192,30 @@ function Planner({
             <label className="sr-only" htmlFor="origin-search">
               출발 장소 검색
             </label>
-            <input
+            <Input
+              className="h-10 border-0 px-0 text-base shadow-none focus-visible:ring-0 md:text-xs"
               id="origin-search"
               value={input}
               maxLength={80}
               onChange={(event) => setInput(event.target.value)}
               placeholder={demo ? '예시: 성수역, 작은 식탁' : '숙소, 역 이름, 주소로 검색'}
             />
-            <button type="submit" aria-label="장소 검색" disabled={!input.trim()}>
+            <Button size="icon-sm" type="submit" aria-label="장소 검색" disabled={!input.trim()}>
               <ArrowRight size={18} />
-            </button>
+            </Button>
           </form>
           {showSearch ? (
             <section className="search-results" aria-label="출발 장소 검색 결과">
               <div className="search-results-heading">
                 <strong>여기서 출발할까요?</strong>
-                <button aria-label="검색 결과 닫기" onClick={() => setShowSearch(false)}>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="검색 결과 닫기"
+                  onClick={() => setShowSearch(false)}
+                >
                   <X size={15} />
-                </button>
+                </Button>
               </div>
               {search.isFetching ? (
                 <p role="status">장소를 찾고 있어요.</p>
@@ -193,8 +223,9 @@ function Planner({
                 <p role="alert">{search.error.message}</p>
               ) : search.data?.length ? (
                 search.data.map((place) => (
-                  <button
-                    className="search-result"
+                  <Button
+                    variant="ghost"
+                    className="search-result h-auto whitespace-normal rounded-none"
                     key={place.id}
                     onClick={() => handleOriginSelect(place)}
                   >
@@ -204,7 +235,7 @@ function Planner({
                       <small>{place.address}</small>
                     </span>
                     <ArrowRight size={15} />
-                  </button>
+                  </Button>
                 ))
               ) : (
                 <p>
@@ -237,34 +268,46 @@ function Planner({
           <section className="nearby-section" aria-labelledby="nearby-title">
             <div className="section-heading">
               <h2 id="nearby-title">주변을 둘러보세요</h2>
-              <label className="radius-select">
-                <span className="sr-only">검색 반경</span>
-                <select value={radius} onChange={(event) => setRadius(Number(event.target.value))}>
-                  <option value={500}>반경 500m</option>
-                  <option value={1000}>반경 1km</option>
-                  <option value={2000}>반경 2km</option>
-                  <option value={3000}>반경 3km</option>
-                </select>
-              </label>
+              <div className="radius-select">
+                <label className="sr-only" htmlFor="search-radius">
+                  검색 반경
+                </label>
+                <NativeSelect
+                  id="search-radius"
+                  size="sm"
+                  className="text-xs"
+                  value={radius}
+                  onChange={(event) => setRadius(Number(event.target.value))}
+                >
+                  <NativeSelectOption value={500}>반경 500m</NativeSelectOption>
+                  <NativeSelectOption value={1000}>반경 1km</NativeSelectOption>
+                  <NativeSelectOption value={2000}>반경 2km</NativeSelectOption>
+                  <NativeSelectOption value={3000}>반경 3km</NativeSelectOption>
+                </NativeSelect>
+              </div>
             </div>
             <div className="category-filters" role="group" aria-label="장소 종류">
-              <button
-                className={!category ? 'active' : ''}
+              <Button
+                variant={!category ? 'default' : 'outline'}
+                size="sm"
+                className="px-2 text-xs"
                 aria-pressed={!category}
                 onClick={() => setCategory(undefined)}
               >
                 전체
-              </button>
+              </Button>
               {categories.map(({ value, Icon }) => (
-                <button
+                <Button
                   key={value}
-                  className={category === value ? 'active' : ''}
+                  variant={category === value ? 'default' : 'outline'}
+                  size="sm"
+                  className="px-2 text-xs"
                   aria-pressed={category === value}
                   onClick={() => setCategory(value)}
                 >
                   <Icon size={14} />
                   {categoryLabels[value]}
-                </button>
+                </Button>
               ))}
             </div>
             <div className="results-caption">
@@ -281,7 +324,7 @@ function Planner({
               ) : nearby.error ? (
                 <div className="list-message" role="alert">
                   <p>{nearby.error.message}</p>
-                  <button onClick={() => nearby.refetch()}>다시 찾기</button>
+                  <Button onClick={() => nearby.refetch()}>다시 찾기</Button>
                 </div>
               ) : planner.origin ? (
                 places.length > 0 ? (

@@ -1,3 +1,4 @@
+import { Button } from '@/common/design-system/components/Button';
 import { useState } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
 import type { Itinerary, Place } from '../../models/model-trip';
@@ -177,23 +178,32 @@ export function DemoMap({ origin, places, selected, itinerary, onSelect }: Props
         </g>
       </svg>
       <div className="map-controls">
-        <button
+        <Button
+          variant="outline"
+          size="icon"
           aria-label="예시 지도 확대"
           disabled={zoom >= 1.5}
           onClick={() => setZoom((current) => Math.min(1.5, current + 0.25))}
         >
           <Plus size={18} />
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
           aria-label="예시 지도 축소"
           disabled={zoom <= 0.75}
           onClick={() => setZoom((current) => Math.max(0.75, current - 0.25))}
         >
           <Minus size={18} />
-        </button>
-        <button aria-label="예시 지도 전체 보기" onClick={() => setZoom(1)}>
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="예시 지도 전체 보기"
+          onClick={() => setZoom(1)}
+        >
           <Crosshair size={18} />
-        </button>
+        </Button>
       </div>
       <span className="demo-watermark">예시 개략도 · 실제 지도와 경로가 아닙니다</span>
     </>

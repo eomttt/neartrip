@@ -1,3 +1,4 @@
+import { Button } from '@/common/design-system/components/Button';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
 import { loadKakaoMap } from '../../../../common/maps/kakao-loader';
@@ -126,7 +127,7 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
         <div className="map-message" role="alert">
           <strong>지도 연결을 확인해주세요</strong>
           <p>{error}</p>
-          <button onClick={() => window.location.reload()}>다시 불러오기</button>
+          <Button onClick={() => window.location.reload()}>다시 불러오기</Button>
         </div>
       ) : !ready ? (
         <div className="map-message" role="status">
@@ -134,7 +135,9 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
         </div>
       ) : null}
       <div className="map-controls">
-        <button
+        <Button
+          variant="outline"
+          size="icon"
           aria-label="지도 확대"
           onClick={() => {
             const current = map.current;
@@ -142,8 +145,10 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
           }}
         >
           <Plus size={18} />
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
           aria-label="지도 축소"
           onClick={() => {
             const current = map.current;
@@ -151,15 +156,17 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
           }}
         >
           <Minus size={18} />
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
           aria-label="전체 동선 보기"
           onClick={() => {
             if (bounds.current) map.current?.setBounds(bounds.current, 85, 65, 90, 65);
           }}
         >
           <Crosshair size={18} />
-        </button>
+        </Button>
       </div>
     </>
   );

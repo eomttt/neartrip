@@ -1,10 +1,14 @@
+import { RoutePlaybackMarker } from '../RoutePlaybackMarker';
+import type { RouteHighlight, RouteMapHandle } from '../../utils/route-highlight';
 import { Button } from '@/common/design-system/components/Button';
-import { useState } from 'react';
+import { useImperativeHandle, useState, type Ref } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
 import type { Itinerary, Place } from '../../models/model-trip';
 
 interface Props {
+  ref?: Ref<RouteMapHandle>;
   origin: Place | null;
+  destination?: Place | null;
   places: Place[];
   selected: Place[];
   itinerary: Itinerary | null;
@@ -14,16 +18,61 @@ function point(place: { lat: number; lng: number }) {
   return { x: 100 + (place.lng - 127.044) * 42_000, y: 640 - (place.lat - 37.539) * 55_000 };
 }
 
-export function DemoMap({ origin, places, selected, itinerary, onSelect }: Props) {
+export function DemoMap({
+  ref,
+  origin,
+  destination,
+  places,
+  selected,
+  itinerary,
+  onSelect,
+}: Props) {
   const [zoom, setZoom] = useState(1);
+  const [focus, setFocus] = useState<{
+    target: RouteHighlight;
+    itinerary: Itinerary | null;
+    request: number;
+  } | null>(null);
+  const highlight = focus?.itinerary === itinerary ? focus : null;
+  useImperativeHandle(
+    ref,
+    () => ({
+      highlightRoute(target) {
+        setZoom(1);
+        setFocus((current) => ({ target, itinerary, request: (current?.request ?? 0) + 1 }));
+      },
+    }),
+    [itinerary],
+  );
+  const focusedPoints = highlight
+    ? [
+        ...highlight.target.segments.flatMap((segment) => segment.points),
+        highlight.target.destination,
+      ].map(point)
+    : [{ x: 450, y: 380 }];
+  const minX = Math.min(...focusedPoints.map((value) => value.x));
+  const minY = Math.min(...focusedPoints.map((value) => value.y));
+  const maxX = Math.max(...focusedPoints.map((value) => value.x));
+  const maxY = Math.max(...focusedPoints.map((value) => value.y));
+  const width = Math.max(240, maxX - minX + 160);
+  const height = Math.max(200, maxY - minY + 160);
+  const view = highlight
+    ? { x: (minX + maxX - width) / 2, y: (minY + maxY - height) / 2, width, height }
+    : { x: 0, y: 0, width: 900, height: 760 };
+  const center = { x: view.x + view.width / 2, y: view.y + view.height / 2 };
   const visible = new Map(
-    [...places, ...selected, ...(origin ? [origin] : [])].map((place) => [place.id, place]),
+    [
+      ...places,
+      ...selected,
+      ...(origin ? [origin] : []),
+      ...(destination ? [destination] : []),
+    ].map((place) => [place.id, place]),
   );
   return (
     <>
       <svg
         className="demo-canvas"
-        viewBox="0 0 900 760"
+        viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
         role="group"
         aria-label="성수동 예시 개략도. 실제 지도와 도로가 아닙니다."
       >
@@ -47,7 +96,9 @@ export function DemoMap({ origin, places, selected, itinerary, onSelect }: Props
           </filter>
         </defs>
         <rect width="900" height="760" fill="#e9ece3" />
-        <g transform={`translate(${450 * (1 - zoom)} ${380 * (1 - zoom)}) scale(${zoom})`}>
+        <g
+          transform={`translate(${center.x * (1 - zoom)} ${center.y * (1 - zoom)}) scale(${zoom})`}
+        >
           <rect x="-300" y="-300" width="1500" height="1400" fill="url(#blocks)" />
           <path d="M-50 640Q230 565 430 670T960 625L960 850H-50Z" fill="#bfd8d7" />
           <path
@@ -111,12 +162,43 @@ export function DemoMap({ origin, places, selected, itinerary, onSelect }: Props
               fill="none"
             />
           ))}
+          {highlight ? (
+            <g
+              key={highlight.request}
+              className="demo-route-highlight"
+              role="status"
+              aria-label={`${highlight.target.label} 이동 미리보기`}
+            >
+              {highlight.target.segments.map((segment, index) => (
+                <polyline
+                  key={index}
+                  points={segment.points
+                    .map((value) => {
+                      const p = point(value);
+                      return `${p.x},${p.y}`;
+                    })
+                    .join(' ')}
+                  stroke="var(--route-highlight)"
+                  strokeWidth="9"
+                  strokeDasharray="8 7"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              ))}
+              <RoutePlaybackMarker
+                segments={highlight.target.segments}
+                destination={highlight.target.destination}
+                project={point}
+              />
+            </g>
+          ) : null}
           {Array.from(visible.values()).map((place) => {
             const p = point(place);
             const isOrigin = place.id === origin?.id;
+            const isDestination = place.id === destination?.id;
             const index = selected.findIndex((item) => item.id === place.id);
             const color =
-              isOrigin || index >= 0
+              isOrigin || isDestination || index >= 0
                 ? '#245d46'
                 : place.category === 'cafe'
                   ? '#b5824f'
@@ -127,13 +209,17 @@ export function DemoMap({ origin, places, selected, itinerary, onSelect }: Props
               <g key={place.id} transform={`translate(${p.x} ${p.y})`}>
                 <g
                   role="button"
-                  tabIndex={isOrigin ? -1 : 0}
-                  aria-label={`${place.name}${isOrigin ? ' 출발점' : ' 지도에서 선택'}`}
+                  tabIndex={isOrigin || isDestination ? -1 : 0}
+                  aria-label={`${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : ' 지도에서 선택'}`}
                   onClick={() => {
-                    if (!isOrigin) onSelect(place);
+                    if (!isOrigin && !isDestination) onSelect(place);
                   }}
                   onKeyDown={(event) => {
-                    if (!isOrigin && (event.key === 'Enter' || event.key === ' ')) {
+                    if (
+                      !isOrigin &&
+                      !isDestination &&
+                      (event.key === 'Enter' || event.key === ' ')
+                    ) {
                       event.preventDefault();
                       onSelect(place);
                     }
@@ -146,18 +232,22 @@ export function DemoMap({ origin, places, selected, itinerary, onSelect }: Props
                     textAnchor="middle"
                     y="5"
                     fill="white"
-                    fontSize={isOrigin ? 12 : 14}
+                    fontSize={isOrigin || isDestination ? 12 : 14}
                     fontWeight="700"
                   >
                     {isOrigin
-                      ? '출발'
-                      : index >= 0
-                        ? index + 1
-                        : place.category === 'cafe'
-                          ? 'C'
-                          : place.category === 'restaurant'
-                            ? 'F'
-                            : 'P'}
+                      ? isDestination
+                        ? '왕복'
+                        : '출발'
+                      : isDestination
+                        ? '도착'
+                        : index >= 0
+                          ? index + 1
+                          : place.category === 'cafe'
+                            ? 'C'
+                            : place.category === 'restaurant'
+                              ? 'F'
+                              : 'P'}
                   </text>
                 </g>
                 <text
@@ -200,7 +290,10 @@ export function DemoMap({ origin, places, selected, itinerary, onSelect }: Props
           variant="outline"
           size="icon"
           aria-label="예시 지도 전체 보기"
-          onClick={() => setZoom(1)}
+          onClick={() => {
+            setZoom(1);
+            setFocus(null);
+          }}
         >
           <Crosshair size={18} />
         </Button>

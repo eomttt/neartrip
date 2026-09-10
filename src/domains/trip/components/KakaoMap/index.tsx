@@ -1,24 +1,100 @@
+import { playRoute } from '../../utils/route-playback';
+import type { RouteMapHandle } from '../../utils/route-highlight';
 import { Button } from '@/common/design-system/components/Button';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
 import { loadKakaoMap } from '../../../../common/maps/kakao-loader';
 import type { Itinerary, Place } from '../../models/model-trip';
 
 interface Props {
+  ref?: Ref<RouteMapHandle>;
   origin: Place | null;
+  destination?: Place | null;
   places: Place[];
   selected: Place[];
   itinerary: Itinerary | null;
   onSelect: (place: Place) => void;
 }
 
-export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Props) {
+export function KakaoMap({
+  ref,
+  origin,
+  destination,
+  places,
+  selected,
+  itinerary,
+  onSelect,
+}: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<kakao.maps.Map | null>(null);
   const bounds = useRef<kakao.maps.LatLngBounds | null>(null);
+  const clearHighlight = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const handlePlaceSelect = useEffectEvent(onSelect);
+  useImperativeHandle(
+    ref,
+    () => ({
+      highlightRoute(highlight) {
+        const currentMap = map.current;
+        if (!ready || !currentMap) return;
+        clearHighlight.current();
+        const focusBounds = new kakao.maps.LatLngBounds();
+        const highlightColor = getComputedStyle(container.current ?? document.documentElement)
+          .getPropertyValue('--route-highlight')
+          .trim();
+        const lines = highlight.segments
+          .filter((segment) => segment.points.length > 1)
+          .map((segment) => {
+            const path = segment.points.map((point) => new kakao.maps.LatLng(point.lat, point.lng));
+            path.forEach((point) => focusBounds.extend(point));
+            return new kakao.maps.Polyline({
+              map: currentMap,
+              path,
+              strokeWeight: 9,
+              strokeColor: highlightColor,
+              strokeOpacity: 0.95,
+              strokeStyle: segment.mode === 'walk' ? 'solid' : 'shortdash',
+              zIndex: 10,
+            });
+          });
+        const destination = new kakao.maps.LatLng(
+          highlight.destination.lat,
+          highlight.destination.lng,
+        );
+        focusBounds.extend(destination);
+        const marker = document.createElement('span');
+        marker.className = 'route-focus-marker';
+        marker.setAttribute('role', 'status');
+        marker.setAttribute('aria-label', `${highlight.label} 이동 미리보기`);
+        const dot = document.createElement('span');
+        dot.className = 'route-playback-dot';
+        const label = document.createElement('span');
+        label.className = 'route-playback-label';
+        label.textContent = '이동 미리보기';
+        marker.append(dot, label);
+        const overlay = new kakao.maps.CustomOverlay({
+          map: currentMap,
+          position: destination,
+          content: marker,
+          xAnchor: 0.5,
+          yAnchor: 0.5,
+          zIndex: 11,
+        });
+        currentMap.setBounds(focusBounds, 100, 70, 110, 70);
+        const stopPlayback = playRoute(highlight.segments, (position) => {
+          overlay.setPosition(new kakao.maps.LatLng(position.lat, position.lng));
+        });
+        clearHighlight.current = () => {
+          stopPlayback();
+          lines.forEach((line) => line.setMap(null));
+          overlay.setMap(null);
+        };
+      },
+    }),
+    [ready],
+  );
+
   useEffect(() => {
     let active = true;
     const key: unknown = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY;
@@ -40,6 +116,7 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
       });
     return () => {
       active = false;
+      clearHighlight.current();
     };
   }, []);
 
@@ -48,8 +125,11 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
     const element = container.current;
     if (!ready || !currentMap || !element) return;
     const observer = new ResizeObserver(() => {
+      const center = currentMap.getCenter();
+      const level = currentMap.getLevel();
       currentMap.relayout();
-      if (bounds.current) currentMap.setBounds(bounds.current, 60, 60, 60, 60);
+      currentMap.setLevel(level, { animate: false, anchor: center });
+      currentMap.setCenter(center);
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -62,25 +142,38 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
     const lines: kakao.maps.Polyline[] = [];
     const viewBounds = new kakao.maps.LatLngBounds();
     const visible = new Map(
-      [...places, ...selected, ...(origin ? [origin] : [])].map((place) => [place.id, place]),
+      [
+        ...places,
+        ...selected,
+        ...(origin ? [origin] : []),
+        ...(destination ? [destination] : []),
+      ].map((place) => [place.id, place]),
     );
     for (const place of visible.values()) {
       const isOrigin = origin?.id === place.id;
+      const isDestination = destination?.id === place.id;
       const index = selected.findIndex((item) => item.id === place.id);
       const content = document.createElement('button');
-      content.className = `map-pin pin-${place.category} ${isOrigin ? 'pin-origin' : ''} ${index >= 0 ? 'pin-selected' : ''}`;
+      content.className = `map-pin pin-${place.category} ${isOrigin ? 'pin-origin' : ''} ${index >= 0 ? 'pin-selected' : ''} ${isDestination ? 'pin-destination' : ''}`;
       content.textContent = isOrigin
-        ? '출발'
-        : index >= 0
-          ? String(index + 1)
-          : place.category === 'cafe'
-            ? 'C'
-            : place.category === 'restaurant'
-              ? 'F'
-              : 'P';
-      content.setAttribute('aria-label', `${place.name}${isOrigin ? ' 출발점' : ' 선택'}`);
+        ? isDestination
+          ? '왕복'
+          : '출발'
+        : isDestination
+          ? '도착'
+          : index >= 0
+            ? String(index + 1)
+            : place.category === 'cafe'
+              ? 'C'
+              : place.category === 'restaurant'
+                ? 'F'
+                : 'P';
+      content.setAttribute(
+        'aria-label',
+        `${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : ' 선택'}`,
+      );
       content.title = place.name;
-      if (!isOrigin) content.onclick = () => handlePlaceSelect(place);
+      if (!isOrigin && !isDestination) content.onclick = () => handlePlaceSelect(place);
       const position = new kakao.maps.LatLng(place.lat, place.lng);
       viewBounds.extend(position);
       overlays.push(
@@ -89,7 +182,7 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
           position,
           content,
           yAnchor: 1,
-          zIndex: isOrigin ? 5 : index >= 0 ? 4 : 3,
+          zIndex: isOrigin || isDestination ? 5 : index >= 0 ? 4 : 3,
         }),
       );
     }
@@ -115,10 +208,11 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
       currentMap.setBounds(viewBounds, 85, 65, 90, 65);
     }
     return () => {
+      clearHighlight.current();
       overlays.forEach((overlay) => overlay.setMap(null));
       lines.forEach((line) => line.setMap(null));
     };
-  }, [ready, origin, places, selected, itinerary]);
+  }, [ready, origin, destination, places, selected, itinerary]);
 
   return (
     <>
@@ -162,6 +256,7 @@ export function KakaoMap({ origin, places, selected, itinerary, onSelect }: Prop
           size="icon"
           aria-label="전체 동선 보기"
           onClick={() => {
+            clearHighlight.current();
             if (bounds.current) map.current?.setBounds(bounds.current, 85, 65, 90, 65);
           }}
         >

@@ -61,9 +61,10 @@ export function createApp() {
     response.json(places);
   });
   app.post('/api/plan', async (request, response) => {
-    const { origin, places, order } = planRequestSchema.parse(request.body);
-    const ordered = order === 'nearby' ? orderRoundTrip(origin, places) : places;
-    const points = [origin, ...ordered, origin];
+    const { origin, destination, places, order } = planRequestSchema.parse(request.body);
+    const ordered =
+      order === 'nearby' ? orderRoundTrip(origin, places, destination ?? origin) : places;
+    const points = [origin, ...ordered, destination ?? origin];
     const pairs = points.slice(1).flatMap((to, index) => {
       const from = points[index];
       return from ? [{ from, to }] : [];

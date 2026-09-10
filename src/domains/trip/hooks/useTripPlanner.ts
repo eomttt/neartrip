@@ -4,6 +4,7 @@ import { requestPlan } from '../queries/searchTripQueries';
 
 export function useTripPlanner(initialOrigin: Place | null) {
   const [origin, setOrigin] = useState(initialOrigin);
+  const [destination, setDestination] = useState<Place | null>(null);
   const [selected, setSelected] = useState<Place[]>([]);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [error, setError] = useState('');
@@ -22,8 +23,13 @@ export function useTripPlanner(initialOrigin: Place | null) {
     setOrigin(place);
     setSelected([]);
   }
+  function changeDestination(place: Place | null) {
+    clearRoute();
+    setDestination(place);
+    setSelected((current) => current.filter((item) => item.id !== place?.id));
+  }
   function togglePlace(place: Place) {
-    if (place.id === origin?.id) return;
+    if (place.id === origin?.id || place.id === destination?.id) return;
     if (!selected.some((item) => item.id === place.id) && selected.length >= 5) {
       setError('한 번에 5곳까지 담을 수 있어요.');
       return;
@@ -53,17 +59,21 @@ export function useTripPlanner(initialOrigin: Place | null) {
     clearRoute();
     setSelected([]);
   }
-  async function buildPlan(order: 'nearby' | 'manual') {
-    if (!origin || selected.length === 0) return;
+  async function buildPlan() {
+    if (!origin || (selected.length === 0 && !destination)) return;
     clearRoute();
     const controller = new AbortController();
     requestRef.current = controller;
     setIsPlanning(true);
     try {
-      const result = await requestPlan({ origin, places: selected, order }, controller.signal);
+      const result = await requestPlan(
+        { origin, destination, places: selected, order: 'manual' },
+        controller.signal,
+      );
       if (controller.signal.aborted) return;
       setSelected(result.places);
       setItinerary(result);
+      return result;
     } catch (cause) {
       if (!controller.signal.aborted)
         setError(
@@ -75,11 +85,13 @@ export function useTripPlanner(initialOrigin: Place | null) {
   }
   return {
     origin,
+    destination,
     selected,
     itinerary,
     error,
     isPlanning,
     changeOrigin,
+    changeDestination,
     togglePlace,
     movePlace,
     resetPlaces,

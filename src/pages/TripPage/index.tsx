@@ -1,3 +1,5 @@
+import { getRouteHighlight, type RouteMapHandle } from '../../domains/trip/utils/route-highlight';
+import type { Itinerary } from '../../domains/trip/models/model-trip';
 import { Input } from '@/common/design-system/components/Input';
 import { NativeSelect, NativeSelectOption } from '@/common/design-system/components/NativeSelect';
 import {
@@ -11,7 +13,7 @@ import {
   DialogClose,
 } from '@/common/design-system/components/Dialog';
 import { Button } from '@/common/design-system/components/Button';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
@@ -22,15 +24,17 @@ import {
   Info,
   Leaf,
   MapPin,
+  ListOrdered,
   Route,
   Search,
   UtensilsCrossed,
-  X,
 } from 'lucide-react';
 import { searchTripQueries } from '../../domains/trip/queries/searchTripQueries';
 import { categoryLabels, type Category, type Place } from '../../domains/trip/models/model-trip';
 import { useTripPlanner } from '../../domains/trip/hooks/useTripPlanner';
 import { PlaceCard } from '../../domains/trip/components/PlaceCard';
+import { DestinationPicker } from '../../domains/trip/components/DestinationPicker';
+import { SelectedPlaces } from '../../domains/trip/components/SelectedPlaces';
 import { RouteSummary } from '../../domains/trip/components/RouteSummary';
 import { DemoMap } from '../../domains/trip/components/DemoMap';
 import { KakaoMap } from '../../domains/trip/components/KakaoMap';
@@ -79,6 +83,28 @@ function Planner({
   configured: boolean;
 }) {
   const planner = useTripPlanner(initialOrigin);
+  const [activeView, setActiveView] = useState<'discover' | 'map'>('discover');
+  const [showRouteDetails, setShowRouteDetails] = useState(false);
+  const sheetReturnTarget = useRef<'trigger' | 'map' | 'discover'>('trigger');
+  const discoverTab = useRef<HTMLButtonElement>(null);
+  const mapTab = useRef<HTMLButtonElement>(null);
+  const routeMap = useRef<RouteMapHandle>(null);
+  const [focusedRoute, setFocusedRoute] = useState<{
+    itinerary: Itinerary;
+    legIndex: number;
+    segmentIndex: number | null;
+  } | null>(null);
+  const activeRoute = focusedRoute?.itinerary === planner.itinerary ? focusedRoute : null;
+  function handleRouteFocus(legIndex: number, segmentIndex: number | null) {
+    if (!planner.itinerary) return;
+    const highlight = getRouteHighlight(planner.itinerary, legIndex, segmentIndex);
+    if (!highlight) return;
+    setFocusedRoute({ itinerary: planner.itinerary, legIndex, segmentIndex });
+    sheetReturnTarget.current = 'map';
+    setShowRouteDetails(false);
+    routeMap.current?.highlightRoute(highlight);
+  }
+  const originSearch = useRef<HTMLInputElement>(null);
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -90,13 +116,13 @@ function Planner({
   const places = useMemo(
     () =>
       (nearby.data ?? [])
-        .filter((place) => place.id !== planner.origin?.id)
+        .filter((place) => place.id !== planner.origin?.id && place.id !== planner.destination?.id)
         .toSorted((a, b) =>
           planner.origin
             ? distanceMeters(planner.origin, a) - distanceMeters(planner.origin, b)
             : 0,
         ),
-    [nearby.data, planner.origin],
+    [nearby.data, planner.origin, planner.destination],
   );
   const selectedIds = new Set(planner.selected.map((place) => place.id));
   const MapComponent = demo ? DemoMap : KakaoMap;
@@ -105,6 +131,14 @@ function Planner({
     setShowSearch(false);
     setInput('');
     setQuery('');
+  }
+
+  async function handleBuildPlan() {
+    const result = await planner.buildPlan();
+    if (result) {
+      setActiveView('map');
+      mapTab.current?.focus();
+    }
   }
 
   return (
@@ -129,16 +163,20 @@ function Planner({
                 장소 하나에서 시작하는 작은 여행
               </DialogTitle>
               <DialogDescription className="leading-relaxed">
-                출발할 장소를 검색하고 주변에서 마음에 드는 곳을 5곳까지 담아주세요.
+                여행 중 묵는 숙소를 검색해보세요. 근처에서 마음에 드는 곳을 5곳까지 담으면 오늘의
+                동선을 만들어요.
               </DialogDescription>
             </DialogHeader>
             <ol className="list-decimal space-y-3 pl-5 text-sm leading-relaxed">
-              <li>숙소·역 이름·주소로 출발 장소를 검색해요.</li>
-              <li>반경과 종류를 고르고, 목록이나 지도에서 가고 싶은 곳을 담아요.</li>
-              <li>동선을 만든 뒤 화살표로 방문 순서를 바꾸고 다시 길을 찾아요.</li>
+              <li>숙소를 출발점으로 정하고 맛집·카페·가볼 만한 곳을 골라요.</li>
+              <li>숙소로 돌아오는 동선이 기본이에요. 마지막 도착점은 따로 정할 수도 있어요.</li>
+              <li>
+                동선을 만들면 2단계 지도에서 확인해요. 이동 안내를 누르면 구간을 살펴볼 수 있어요.
+              </li>
             </ol>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              시작점으로 돌아오는 동선이에요. 날짜·영업시간·체류시간은 포함되지 않아요.
+              도착점을 선택하면 그곳에서 여행을 마치고, 비워두면 출발점으로 돌아와요.
+              날짜·영업시간·체류시간은 포함되지 않아요.
             </p>
             <DialogFooter>
               <DialogClose asChild>
@@ -162,22 +200,60 @@ function Planner({
           카카오 키 설정이 일부 빠져 있어요. .env.local의 REST 키와 JavaScript 키를 확인해주세요.
         </div>
       ) : null}
+      <nav className="trip-stepper" aria-label="여행 단계">
+        <ol>
+          <li>
+            <Button
+              variant="ghost"
+              className="h-auto w-full px-1 py-2"
+              ref={discoverTab}
+              aria-label="1단계 출발·도착·주변 선택"
+              aria-current={activeView === 'discover' ? 'step' : undefined}
+              aria-controls="discover-view"
+              data-complete={!!planner.origin}
+              onClick={() => setActiveView('discover')}
+            >
+              <span className="step-number" aria-hidden="true">
+                1
+              </span>
+              <span>출발·도착·주변 선택</span>
+            </Button>
+          </li>
+          <li>
+            <Button
+              ref={mapTab}
+              variant="ghost"
+              className="h-auto w-full px-1 py-2"
+              aria-label="2단계 동선 보기"
+              aria-current={activeView !== 'discover' ? 'step' : undefined}
+              aria-controls="map-view"
+              disabled={!planner.itinerary}
+              onClick={() => setActiveView('map')}
+            >
+              <span className="step-number" aria-hidden="true">
+                2
+              </span>
+              <span>동선 보기</span>
+            </Button>
+          </li>
+        </ol>
+      </nav>
       <main className="planner-layout">
-        <aside className="discover-panel" aria-label="장소 찾기와 선택">
+        <aside
+          id="discover-view"
+          className="discover-panel"
+          aria-label="장소 찾기와 선택"
+          aria-hidden={activeView !== 'discover'}
+          inert={activeView !== 'discover'}
+          data-active={activeView === 'discover'}
+          data-has-origin={!!planner.origin}
+        >
           <div className="discover-intro">
             <span className="eyebrow">
               <span className="tiny-line" /> A DAY, CLOSE BY
             </span>
-            <h1>
-              가까운 곳에서
-              <br />
-              발견하는 <span>좋은 하루.</span>
-            </h1>
-            <p>
-              어디서 시작할까요?
-              <br />
-              마음에 드는 곳만 담으면, 길은 이어드릴게요.
-            </p>
+            <h1>숙소 근처, 오늘 어디 가지?</h1>
+            <p>근처 맛집·카페·가볼 만한 곳을 골라 오늘의 동선을 만들어보세요.</p>
           </div>
           <form
             className="search-form"
@@ -194,59 +270,63 @@ function Planner({
             </label>
             <Input
               className="h-10 border-0 px-0 text-base shadow-none focus-visible:ring-0 md:text-xs"
+              ref={originSearch}
               id="origin-search"
               value={input}
               maxLength={80}
               onChange={(event) => setInput(event.target.value)}
-              placeholder={demo ? '예시: 성수역, 작은 식탁' : '숙소, 역 이름, 주소로 검색'}
+              placeholder={demo ? '예시: 성수역, 작은 식탁' : '지금 묵는 숙소 이름이나 주소'}
             />
             <Button size="icon-sm" type="submit" aria-label="장소 검색" disabled={!input.trim()}>
               <ArrowRight size={18} />
             </Button>
           </form>
-          {showSearch ? (
-            <section className="search-results" aria-label="출발 장소 검색 결과">
-              <div className="search-results-heading">
-                <strong>여기서 출발할까요?</strong>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label="검색 결과 닫기"
-                  onClick={() => setShowSearch(false)}
-                >
-                  <X size={15} />
-                </Button>
-              </div>
-              {search.isFetching ? (
-                <p role="status">장소를 찾고 있어요.</p>
-              ) : search.error ? (
-                <p role="alert">{search.error.message}</p>
-              ) : search.data?.length ? (
-                search.data.map((place) => (
-                  <Button
-                    variant="ghost"
-                    className="search-result h-auto whitespace-normal rounded-none"
-                    key={place.id}
-                    onClick={() => handleOriginSelect(place)}
-                  >
-                    <MapPin size={16} />
-                    <span>
-                      <strong>{place.name}</strong>
-                      <small>{place.address}</small>
-                    </span>
-                    <ArrowRight size={15} />
-                  </Button>
-                ))
-              ) : (
-                <p>
-                  검색 결과가 없어요.{' '}
-                  {demo
-                    ? '예시 모드에서는 성수역을 검색해보세요.'
-                    : '장소명이나 주소를 바꿔보세요.'}
-                </p>
-              )}
-            </section>
-          ) : null}
+          <Dialog open={showSearch} onOpenChange={setShowSearch}>
+            <DialogContent
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                originSearch.current?.focus({ preventScroll: true });
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle>여기서 출발할까요?</DialogTitle>
+                <DialogDescription>검색한 장소 중 오늘의 출발점을 골라주세요.</DialogDescription>
+              </DialogHeader>
+              <section
+                className="max-h-[45dvh] overflow-y-auto overscroll-contain"
+                aria-label="출발 장소 검색 결과"
+              >
+                {search.isFetching ? (
+                  <p role="status">장소를 찾고 있어요.</p>
+                ) : search.error ? (
+                  <p role="alert">{search.error.message}</p>
+                ) : search.data?.length ? (
+                  search.data.map((place) => (
+                    <Button
+                      variant="ghost"
+                      className="search-result h-auto whitespace-normal rounded-none"
+                      key={place.id}
+                      onClick={() => handleOriginSelect(place)}
+                    >
+                      <MapPin size={16} />
+                      <span>
+                        <strong>{place.name}</strong>
+                        <small>{place.address}</small>
+                      </span>
+                      <ArrowRight size={15} />
+                    </Button>
+                  ))
+                ) : (
+                  <p>
+                    검색 결과가 없어요.{' '}
+                    {demo
+                      ? '예시 모드에서는 성수역을 검색해보세요.'
+                      : '장소명이나 주소를 바꿔보세요.'}
+                  </p>
+                )}
+              </section>
+            </DialogContent>
+          </Dialog>
           {planner.origin ? (
             <div className="origin-card">
               <span className="origin-icon">
@@ -262,12 +342,19 @@ function Planner({
             </div>
           ) : (
             <div className="origin-placeholder">
-              <MapPin size={18} /> 출발할 장소를 먼저 검색해주세요.
+              <MapPin size={18} /> 묵는 숙소나 출발할 장소를 검색해주세요.
             </div>
           )}
+          <DestinationPicker value={planner.destination} onChange={planner.changeDestination} />
+          <SelectedPlaces
+            places={planner.selected}
+            onMove={planner.movePlace}
+            onRemove={planner.togglePlace}
+            onReset={planner.resetPlaces}
+          />
           <section className="nearby-section" aria-labelledby="nearby-title">
             <div className="section-heading">
-              <h2 id="nearby-title">주변을 둘러보세요</h2>
+              <h2 id="nearby-title">오늘 들러볼 곳</h2>
               <div className="radius-select">
                 <label className="sr-only" htmlFor="search-radius">
                   검색 반경
@@ -316,7 +403,13 @@ function Planner({
               </span>
               <span>직선거리순</span>
             </div>
-            <div className="place-list" aria-busy={nearby.isFetching}>
+            <div
+              className="place-list"
+              role="region"
+              aria-label="주변 장소 목록"
+              tabIndex={0}
+              aria-busy={nearby.isFetching}
+            >
               {nearby.isFetching ? (
                 <div className="list-message" role="status">
                   <span className="spinner" /> 주변 장소를 찾고 있어요.
@@ -358,13 +451,25 @@ function Planner({
             <Leaf size={14} /> 가까이서 발견하는 나만의 취향
           </footer>
         </aside>
-        <section className="map-panel" aria-label="여행 지도">
+        <section
+          id="map-view"
+          className="map-panel"
+          aria-label="여행 지도"
+          aria-hidden={activeView !== 'map'}
+          inert={activeView !== 'map'}
+          data-active={activeView === 'map'}
+        >
           <MapComponent
+            ref={routeMap}
             origin={planner.origin}
+            destination={planner.destination}
             places={places}
             selected={planner.selected}
             itinerary={planner.itinerary}
-            onSelect={planner.togglePlace}
+            onSelect={(place) => {
+              planner.togglePlace(place);
+              setActiveView('discover');
+            }}
           />
           <div className="map-top-label">
             <span className="live-dot" />
@@ -405,41 +510,87 @@ function Planner({
               </strong>
             </div>
           )}
-        </section>
-        <aside className="itinerary-sidebar" aria-label="내 여행 일정">
-          <div className="itinerary-top">
-            <span>YOUR DAY, YOUR WAY</span>
-            <span className="sun-symbol">✳</span>
-          </div>
-          <RouteSummary
-            origin={planner.origin}
-            selected={planner.selected}
-            itinerary={planner.itinerary}
-            isPlanning={planner.isPlanning}
-            onRemove={planner.togglePlace}
-            onMove={planner.movePlace}
-            onReset={planner.resetPlaces}
-            onBuild={planner.buildPlan}
-          />
-          {planner.error ? (
-            <div className="error-message" role="alert">
-              <Info size={16} />
-              <p>{planner.error}</p>
+          <Dialog
+            open={showRouteDetails}
+            onOpenChange={(open) => {
+              sheetReturnTarget.current = 'trigger';
+              setShowRouteDetails(open);
+            }}
+          >
+            <div className="map-next-action">
+              {planner.itinerary ? (
+                <DialogTrigger asChild>
+                  <Button className="w-full">
+                    <ListOrdered size={17} /> 이동 안내 보기
+                  </Button>
+                </DialogTrigger>
+              ) : (
+                <Button className="w-full" onClick={() => setActiveView('discover')}>
+                  <ListOrdered size={17} /> 장소 선택으로 돌아가기
+                </Button>
+              )}
             </div>
-          ) : null}
-          <div className="slow-note">
-            <span className="slow-drawing" aria-hidden="true">
-              ✳
-            </span>
-            <p>
-              빽빽한 계획보다,
-              <br />
-              발길이 머무는 여행.
-            </p>
-            <span>조금 느려도 괜찮아요.</span>
-          </div>
-        </aside>
+            <DialogContent
+              placement="bottom"
+              className="route-sheet h-[64dvh] overflow-hidden px-5 pt-6 pb-[max(16px,env(safe-area-inset-bottom))]"
+              onCloseAutoFocus={(event) => {
+                if (sheetReturnTarget.current === 'trigger') return;
+                event.preventDefault();
+                const target = sheetReturnTarget.current === 'map' ? mapTab : discoverTab;
+                target.current?.focus({ preventScroll: true });
+              }}
+            >
+              <DialogTitle className="sr-only">이동 안내</DialogTitle>
+              <DialogDescription className="sr-only">
+                구간을 선택하면 안내를 닫고 지도에서 이동 경로를 보여줘요.
+              </DialogDescription>
+              <RouteSummary
+                activeRoute={activeRoute}
+                onFocusRoute={handleRouteFocus}
+                onEdit={() => {
+                  sheetReturnTarget.current = 'discover';
+                  setShowRouteDetails(false);
+                  setActiveView('discover');
+                }}
+                origin={planner.origin}
+                destination={planner.destination}
+                itinerary={planner.itinerary}
+                initiallyExpanded
+              />
+            </DialogContent>
+          </Dialog>
+        </section>
       </main>
+      {activeView === 'discover' ? (
+        <div className="step-next-action">
+          {planner.error ? (
+            <p role="alert" className="mb-2 text-xs text-destructive">
+              {planner.error}
+            </p>
+          ) : null}
+          <Button
+            className="h-11 w-full"
+            disabled={
+              !planner.origin ||
+              (!planner.selected.length && !planner.destination) ||
+              planner.isPlanning
+            }
+            onClick={handleBuildPlan}
+          >
+            {planner.isPlanning ? (
+              <>
+                <span className="spinner" /> 길을 찾아보고 있어요
+              </>
+            ) : (
+              <>
+                <span>순서대로 동선 짜기</span>
+                {planner.selected.length > 0 ? <span>· {planner.selected.length}곳</span> : null}
+                <ArrowRight size={17} />
+              </>
+            )}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -24,6 +24,13 @@ describe('하루 동선', () => {
     }
     expect(loopDistance(ordered)).toBeLessThanOrEqual(loopDistance(places));
   });
+  it('별도 도착점이 있으면 그곳까지의 거리를 포함해 방문 순서를 고른다', () => {
+    const origin = { ...demoOrigin, lng: 127.01 };
+    const near = { ...demoOrigin, id: 'near', lng: 127.02 };
+    const far = { ...demoOrigin, id: 'far', lng: 127.03 };
+    const destination = { ...demoOrigin, id: 'end', lng: 127.04 };
+    expect(orderRoundTrip(origin, [far, near], destination)).toEqual([near, far]);
+  });
   it('동일한 좌표의 거리는 0이다', () => {
     expect(distanceMeters(demoOrigin, demoOrigin)).toBe(0);
   });

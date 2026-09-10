@@ -54,6 +54,62 @@ describe('여행 API', () => {
     expect(itinerary.legs.at(-1)?.to.id).toBe(demoOrigin.id);
     expect(itinerary.demo).toBe(true);
   });
+  it('도착점은 방문지 5곳과 별도로 받고 그곳에서 동선을 끝낸다', async () => {
+    const places = demoPlaces.slice(0, 5).toReversed();
+    const destination = demoPlaces[5];
+    const response = await fetch(`${baseUrl}/api/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ origin: demoOrigin, destination, places, order: 'manual' }),
+    });
+    expect(response.status).toBe(200);
+    const itinerary = itinerarySchema.parse(await response.json());
+    expect(itinerary.places).toEqual(places);
+    expect(itinerary.legs).toHaveLength(6);
+    expect(itinerary.legs[0]?.from.id).toBe(demoOrigin.id);
+    expect(itinerary.legs.at(-1)?.to.id).toBe(destination?.id);
+    expect(itinerary.legs.some((leg) => leg.to.id === demoOrigin.id)).toBe(false);
+  });
+  it('방문지가 없어도 출발점에서 도착점으로 바로 간다', async () => {
+    const destination = demoPlaces[0];
+    const response = await fetch(`${baseUrl}/api/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ origin: demoOrigin, destination, places: [], order: 'manual' }),
+    });
+    expect(response.status).toBe(200);
+    const itinerary = itinerarySchema.parse(await response.json());
+    expect(itinerary.places).toEqual([]);
+    expect(itinerary.legs).toHaveLength(1);
+    expect(itinerary.legs[0]?.from.id).toBe(demoOrigin.id);
+    expect(itinerary.legs[0]?.to.id).toBe(destination?.id);
+  });
+  it('도착점을 지워 null로 보내면 출발점으로 돌아온다', async () => {
+    const response = await fetch(`${baseUrl}/api/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: demoOrigin,
+        destination: null,
+        places: demoPlaces.slice(0, 1),
+        order: 'manual',
+      }),
+    });
+    const itinerary = itinerarySchema.parse(await response.json());
+    expect(itinerary.legs).toHaveLength(2);
+    expect(itinerary.legs.at(-1)?.to.id).toBe(demoOrigin.id);
+  });
+  it.each([
+    { destination: null, places: [] },
+    { destination: demoPlaces[0], places: demoPlaces.slice(0, 1) },
+  ])('빈 동선과 도착점 중복 방문을 거부한다: %j', async (body) => {
+    const response = await fetch(`${baseUrl}/api/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ origin: demoOrigin, ...body }),
+    });
+    expect(response.status).toBe(400);
+  });
   it('국내 범위 밖 좌표와 중복 장소를 거부한다', async () => {
     const coordinateResponse = await fetch(`${baseUrl}/api/nearby?lat=91&lng=127&radius=500`);
     expect(coordinateResponse.status).toBe(400);

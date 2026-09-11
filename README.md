@@ -52,3 +52,5 @@ npm run format:check
 Vercel의 Next.js 프리셋으로 화면과 API를 함께 배포합니다. Production과 Preview의 환경변수·카카오 허용 도메인은 각각 설정합니다. 현재 GitHub 자동 배포 연결은 완료되지 않았습니다.
 
 API 요청 제한은 인스턴스별 분당 60회입니다. 알려진 경로 응답 오류는 [#7](https://github.com/eomttt/neartrip/issues/7)과 [#9](https://github.com/eomttt/neartrip/issues/9)에서 추적합니다.
+
+오류가 발생하면 화면의 추적 ID로 Vercel Logs를 검색합니다. `api_failure` 로그에는 요청 본문, 구간별 카카오 응답, 검증 실패 위치와 최종 응답이 담깁니다. 키·인증 정보는 가리고 긴 좌표 목록은 일부만 남깁니다. 정상 요청은 상태와 소요 시간만 기록합니다.

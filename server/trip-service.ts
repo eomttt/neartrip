@@ -4,6 +4,7 @@ import { categorySchema, planRequestSchema } from '../src/domains/trip/models/mo
 import { orderRoundTrip } from '../src/domains/trip/utils/route-order';
 import { createDemoLeg, demoOrigin, demoPlaces, nearbyDemo } from './demo';
 import { getLeg, nearbyPlaces, searchPlaces } from './kakao';
+import { withTraceLeg } from './request-trace';
 
 export function getTripConfig() {
   const javascriptKey =
@@ -57,7 +58,11 @@ export async function buildTripPlan(input: unknown) {
       ...(await Promise.all(
         pairs
           .slice(index, index + 3)
-          .map(({ from, to }) => (demo ? createDemoLeg(from, to) : getLeg(from, to))),
+          .map(({ from, to }, offset) =>
+            withTraceLeg(index + offset + 1, async () =>
+              demo ? createDemoLeg(from, to) : getLeg(from, to),
+            ),
+          ),
       )),
     );
   }

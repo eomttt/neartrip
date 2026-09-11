@@ -2,3 +2,7 @@ node_modules
 dist
 artifacts
 package-lock.json
+
+.next
+.vercel
+next-env.d.ts

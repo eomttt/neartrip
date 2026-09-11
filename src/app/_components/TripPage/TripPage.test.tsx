@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Server } from 'node:http';
 import { createTestServer } from '../../../../server/test-server';
+import { demoOrigin } from '../../../../server/demo';
 import { TripPage } from '.';
 
 const nativeFetch = globalThis.fetch;
@@ -35,7 +36,7 @@ afterAll(async () => {
   );
 });
 
-async function setup() {
+async function setup(hasOrigin = true) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const user = userEvent.setup();
   render(
@@ -43,7 +44,8 @@ async function setup() {
       <TripPage />
     </QueryClientProvider>,
   );
-  await screen.findByRole('button', { name: '작은 식탁 담기' });
+  if (hasOrigin) await screen.findByRole('button', { name: '작은 식탁 담기' });
+  else await screen.findByRole('textbox', { name: '출발 장소 검색' });
   return user;
 }
 
@@ -79,6 +81,7 @@ async function showDetails(user: ReturnType<typeof userEvent.setup>) {
 }
 
 async function chooseDestination(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(screen.getByRole('button', { name: '출발·도착점 수정' }));
   await user.click(screen.getByRole('button', { name: /도착점 추가|도착점 변경/ }));
   await user.type(screen.getByLabelText('도착 장소 검색'), name);
   await user.click(screen.getByRole('button', { name: '도착점 검색' }));
@@ -87,15 +90,52 @@ async function chooseDestination(user: ReturnType<typeof userEvent.setup>, name:
       name: new RegExp(name),
     }),
   );
+  await user.click(screen.getByRole('button', { name: '장소 둘러보기' }));
 }
 
 describe('두 단계 여행 화면과 예시 API 연결', () => {
+  it('출발지를 먼저 선택해야 주변 목록을 보여주고 요약으로 포커스를 옮긴다', async () => {
+    const currentFetch = globalThis.fetch;
+    const liveConfig = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      if (String(input).endsWith('/api/config')) {
+        return Response.json({ demo: false, configured: true, demoOrigin });
+      }
+      return currentFetch(input, init);
+    });
+    try {
+      const user = await setup(false);
+      expect(screen.queryByRole('region', { name: '주변 장소 목록' })).toBeNull();
+      expect(screen.queryByRole('button', { name: /순서대로 동선 짜기/ })).toBeNull();
+      await user.type(screen.getByLabelText('출발 장소 검색'), '성수역');
+      await user.click(screen.getByRole('button', { name: '장소 검색' }));
+      await user.click(
+        await within(await screen.findByRole('region', { name: '출발 장소 검색 결과' })).findByRole(
+          'button',
+          { name: /성수역/ },
+        ),
+      );
+      await screen.findByRole('button', { name: '작은 식탁 담기' });
+      expect(screen.queryByRole('textbox', { name: '출발 장소 검색' })).toBeNull();
+      const summary = screen.getByRole('button', { name: '출발·도착점 수정' });
+      await waitFor(() => expect(document.activeElement).toBe(summary));
+      await user.click(summary);
+      const sheet = screen.getByRole('dialog', { name: '출발·도착점 수정' });
+      expect(sheet.contains(document.activeElement)).toBe(true);
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(document.activeElement).toBe(summary);
+    } finally {
+      liveConfig.mockRestore();
+    }
+  });
+
   it('첫 단계에서 모두 선택하고 동선을 만든 뒤 돌아와도 선택을 유지한다', async () => {
     const user = await setup();
     expect(
       within(screen.getByRole('navigation', { name: '여행 단계' })).getAllByRole('button'),
     ).toHaveLength(2);
-    expect(screen.getByRole('button', { name: '도착점 추가' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '출발·도착점 수정' })).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: '출발 장소 검색' })).toBeNull();
     expect(screen.getByRole('button', { name: '2단계 동선 보기' }).hasAttribute('disabled')).toBe(
       true,
     );
@@ -202,7 +242,9 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     await showDetails(user);
     expect(screen.getByText('2. 작은 식탁 → 초록 산책길')).toBeTruthy();
     await editPlaces(user);
+    await user.click(screen.getByRole('button', { name: '출발·도착점 수정' }));
     await user.click(screen.getByRole('button', { name: '도착점 지우기' }));
+    await user.click(screen.getByRole('button', { name: '장소 둘러보기' }));
     await build(user);
     expect(screen.queryByRole('button', { name: '초록 산책길 도착점' })).toBeNull();
     await showDetails(user);
@@ -217,7 +259,9 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(screen.getByText('1. 성수역 → 온기 베이커리')).toBeTruthy();
     expect(screen.queryByText('2. 온기 베이커리 → 성수역')).toBeNull();
     await editPlaces(user);
+    await user.click(screen.getByRole('button', { name: '출발·도착점 수정' }));
     await user.click(screen.getByRole('button', { name: '도착점 지우기' }));
+    await user.click(screen.getByRole('button', { name: '장소 둘러보기' }));
     expect(
       screen.getByRole('button', { name: /^순서대로 동선 짜기/ }).hasAttribute('disabled'),
     ).toBe(true);
@@ -237,6 +281,7 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(screen.getByRole('button', { name: '취향 서점 담기' }).hasAttribute('disabled')).toBe(
       true,
     );
+    await user.click(screen.getByRole('button', { name: '출발·도착점 수정' }));
     await user.type(screen.getByLabelText('출발 장소 검색'), '작은 식탁');
     await user.click(screen.getByRole('button', { name: '장소 검색' }));
     await user.click(
@@ -245,6 +290,7 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
         { name: /작은 식탁/ },
       ),
     );
+    await user.click(screen.getByRole('button', { name: '장소 둘러보기' }));
     expect(screen.queryByRole('region', { name: '담은 장소' })).toBeNull();
     expect(
       screen.getByRole('button', { name: /^순서대로 동선 짜기/ }).hasAttribute('disabled'),
@@ -354,6 +400,7 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
 
   it('검색 결과가 없는 경우를 안내한다', async () => {
     const user = await setup();
+    await user.click(screen.getByRole('button', { name: '출발·도착점 수정' }));
     await user.type(screen.getByLabelText('출발 장소 검색'), '없는장소');
     await user.click(screen.getByRole('button', { name: '장소 검색' }));
     expect(await screen.findByText(/검색 결과가 없어요/)).toBeTruthy();

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/common/design-system/components/Button';
 import {
   Bus,
+  ExternalLink,
   CircleCheck,
   ChevronRight,
   TriangleAlert,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { Itinerary, Place } from '../../models/model-trip';
 import { formatDistance, formatMinutes } from '../../utils/route-order';
+import { getKakaoRouteUrl } from '../../utils/kakao-route-url';
 
 interface Props {
   activeRoute?: { legIndex: number; segmentIndex: number | null } | null;
@@ -112,6 +114,18 @@ export function RouteSummary({
                   <MapPin size={13} />
                   {index + 1}. {leg.from.name} → {leg.to.name}
                 </Button>
+                {!itinerary.demo ? (
+                  <Button asChild variant="outline" size="sm" className="my-2 w-full text-xs">
+                    <a
+                      href={getKakaoRouteUrl(leg)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${index + 1}구간 카카오맵에서 보기: ${leg.from.name} → ${leg.to.name} · 새 창`}
+                    >
+                      {index + 1}구간 카카오맵에서 보기 <ExternalLink size={13} />
+                    </a>
+                  </Button>
+                ) : null}
                 {leg.warning ? <p className="warning-text">{leg.warning}</p> : null}
                 {leg.segments.length === 0 ? (
                   leg.warning ? null : (

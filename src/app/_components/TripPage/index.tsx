@@ -2,20 +2,19 @@
 
 import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Leaf } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
 import { getRouteHighlight, type RouteMapHandle } from '@/domains/trip/utils/route-highlight';
 import type { Itinerary, Place } from '@/domains/trip/models/model-trip';
 import { tripQueries } from '@/domains/trip/queries/tripQueries';
 import { useTripPlanner } from '@/domains/trip/hooks/useTripPlanner';
 import { useNearbyPlaces } from '@/domains/trip/hooks/useNearbyPlaces';
-import { OriginPicker } from '@/domains/trip/components/OriginPicker';
 import { NearbyPlaces } from '@/domains/trip/components/NearbyPlaces';
-import { DestinationPicker } from '@/domains/trip/components/DestinationPicker';
 import { SelectedPlaces } from '@/domains/trip/components/SelectedPlaces';
 import { TripMap } from '@/domains/trip/components/TripMap';
 import { TripHeader } from './components/TripHeader';
 import { RouteSheet } from './components/RouteSheet';
+import { TripEndpoints } from './components/TripEndpoints';
 import './style.css';
 
 export function TripPage() {
@@ -133,31 +132,30 @@ function Planner({
           data-active={activeView === 'discover'}
           data-has-origin={!!planner.origin}
         >
-          <div className="discover-intro">
-            <span className="eyebrow">
-              <span className="tiny-line" /> A DAY, CLOSE BY
-            </span>
-            <h1>숙소 근처, 오늘 어디 가지?</h1>
-            <p>근처 맛집·카페·가볼 만한 곳을 골라 오늘의 동선을 만들어보세요.</p>
-          </div>
-          <OriginPicker value={planner.origin} demo={demo} onChange={planner.changeOrigin} />
-          <DestinationPicker value={planner.destination} onChange={planner.changeDestination} />
-          <SelectedPlaces
-            places={planner.selected}
-            onMove={planner.movePlace}
-            onRemove={planner.togglePlace}
-            onReset={planner.resetPlaces}
-          />
-          <NearbyPlaces
-            {...nearby}
-            demo={demo}
+          <TripEndpoints
             origin={planner.origin}
-            selected={planner.selected}
-            onSelect={planner.togglePlace}
+            destination={planner.destination}
+            demo={demo}
+            onOriginChange={planner.changeOrigin}
+            onDestinationChange={planner.changeDestination}
           />
-          <footer className="discover-footer">
-            <Leaf size={14} /> 가까이서 발견하는 나만의 취향
-          </footer>
+          {planner.origin ? (
+            <>
+              <SelectedPlaces
+                places={planner.selected}
+                onMove={planner.movePlace}
+                onRemove={planner.togglePlace}
+                onReset={planner.resetPlaces}
+              />
+              <NearbyPlaces
+                {...nearby}
+                demo={demo}
+                origin={planner.origin}
+                selected={planner.selected}
+                onSelect={planner.togglePlace}
+              />
+            </>
+          ) : null}
         </aside>
         <section
           id="map-view"
@@ -193,7 +191,7 @@ function Planner({
           />
         </section>
       </main>
-      {activeView === 'discover' ? (
+      {activeView === 'discover' && planner.origin ? (
         <div className="step-next-action">
           {planner.error ? (
             <p role="alert" className="mb-2 text-xs text-destructive">

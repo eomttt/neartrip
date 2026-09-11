@@ -1,5 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
+import { traceKakaoCall } from './request-trace';
 import type {
   Category,
   Coordinate,
@@ -18,29 +19,44 @@ export class ProviderError extends Error {
   }
 }
 
-async function requestKakao(path: string, params: Record<string, string>): Promise<unknown> {
-  const key = process.env.KAKAO_REST_API_KEY;
-  if (!key) throw new ProviderError('카카오 REST API 키가 설정되지 않았습니다.', 503);
-  let response: Response;
-  try {
-    response = await fetch(`https://dapi.kakao.com${path}?${new URLSearchParams(params)}`, {
-      headers: { Authorization: `KakaoAK ${key}` },
-      signal: AbortSignal.timeout(12_000),
-    });
-  } catch {
-    throw new ProviderError('카카오 응답이 늦어지고 있습니다. 잠시 후 다시 시도해주세요.');
-  }
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403)
-      throw new ProviderError('카카오 API 키 또는 사용 권한을 확인해주세요.', 503);
-    if (response.status === 429)
-      throw new ProviderError(
-        '카카오 API 호출 한도에 도달했습니다. 잠시 후 다시 시도해주세요.',
-        429,
-      );
-    throw new ProviderError(`카카오 서비스에서 요청을 완료하지 못했습니다. (${response.status})`);
-  }
-  return response.json();
+async function requestKakao<T>(
+  path: string,
+  params: Record<string, string>,
+  parse: (value: unknown) => T,
+): Promise<T> {
+  return traceKakaoCall(path, params, async (record) => {
+    const key = process.env.KAKAO_REST_API_KEY;
+    if (!key) throw new ProviderError('카카오 REST API 키가 설정되지 않았습니다.', 503);
+    let response: Response;
+    try {
+      response = await fetch(`https://dapi.kakao.com${path}?${new URLSearchParams(params)}`, {
+        headers: { Authorization: `KakaoAK ${key}` },
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch {
+      throw new ProviderError('카카오 응답이 늦어지고 있습니다. 잠시 후 다시 시도해주세요.');
+    }
+    record(response.status, { captured: false });
+    let body: unknown;
+    try {
+      body = await response.json();
+      record(response.status, body);
+    } catch (error) {
+      record(response.status, { captured: false, reason: 'invalid_json' });
+      if (response.ok) throw error;
+    }
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403)
+        throw new ProviderError('카카오 API 키 또는 사용 권한을 확인해주세요.', 503);
+      if (response.status === 429)
+        throw new ProviderError(
+          '카카오 API 호출 한도에 도달했습니다. 잠시 후 다시 시도해주세요.',
+          429,
+        );
+      throw new ProviderError(`카카오 서비스에서 요청을 완료하지 못했습니다. (${response.status})`);
+    }
+    return parse(body);
+  });
 }
 
 const documentSchema = z.object({
@@ -80,8 +96,10 @@ function documentToPlace(document: z.infer<typeof documentSchema>): Place {
 }
 
 export async function searchPlaces(query: string): Promise<Place[]> {
-  const response = placesResponseSchema.parse(
-    await requestKakao('/v2/local/search/keyword.json', { query, size: '8' }),
+  const response = await requestKakao(
+    '/v2/local/search/keyword.json',
+    { query, size: '8' },
+    (value) => placesResponseSchema.parse(value),
   );
   return response.documents.map(documentToPlace);
 }
@@ -91,15 +109,17 @@ export async function nearbyPlaces(
   category: Category,
   radius: number,
 ): Promise<Place[]> {
-  const response = placesResponseSchema.parse(
-    await requestKakao('/v2/local/search/category.json', {
+  const response = await requestKakao(
+    '/v2/local/search/category.json',
+    {
       category_group_code: categoryCodes[category],
       x: String(origin.lng),
       y: String(origin.lat),
       radius: String(radius),
       sort: 'distance',
       size: '15',
-    }),
+    },
+    (value) => placesResponseSchema.parse(value),
   );
   return response.documents.map(documentToPlace);
 }
@@ -211,7 +231,7 @@ export function isShortTransit(segments: Segment[]): boolean {
 }
 
 async function getWalkSegments(from: Coordinate, to: Coordinate): Promise<Segment[]> {
-  return walkResponseToSegments(await requestKakao('/v2/routing/walk', routeParams(from, to)));
+  return requestKakao('/v2/routing/walk', routeParams(from, to), walkResponseToSegments);
 }
 
 async function completeTransitWalks(
@@ -272,8 +292,10 @@ export async function getLeg(from: Place, to: Place): Promise<Leg> {
   if (walk.length > 0 && totalSeconds(walk) <= 20 * 60) {
     return { from, to, segments: walk, warning: null };
   }
-  const candidates = transitResponseToCandidates(
-    await requestKakao('/v2/routing/publictraffic', routeParams(from, to)),
+  const candidates = await requestKakao(
+    '/v2/routing/publictraffic',
+    routeParams(from, to),
+    transitResponseToCandidates,
   );
   let fallback = walk.length > 0 ? { segments: walk, connected: true } : null;
   // 권장 조건에 맞는 경로를 우선하고, 없으면 조회된 경로를 경고와 함께 유지합니다.

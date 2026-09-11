@@ -42,7 +42,10 @@ describe('Route Handler 요청 경계', () => {
       throw new ProviderError('인증 설정을 확인해주세요.', 401);
     });
     expect(response.status).toBe(401);
-    expect(await response.json()).toEqual({ error: '인증 설정을 확인해주세요.' });
+    expect(await response.json()).toMatchObject({
+      error: '인증 설정을 확인해주세요.',
+      traceId: response.headers.get('x-trace-id'),
+    });
   });
   it('예상하지 못한 오류의 내부 내용을 노출하지 않는다', async () => {
     const response = await respondToApi(planRequest('{}'), () => {

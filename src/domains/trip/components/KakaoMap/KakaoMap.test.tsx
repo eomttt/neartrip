@@ -23,7 +23,7 @@ it('목록을 펼쳐 지도 크기가 바뀌어도 현재 중심과 확대 수�
   const setBounds = vi.fn();
   const setLevel = vi.fn();
   const getLevel = vi.fn().mockReturnValue(4);
-  vi.stubEnv('VITE_KAKAO_JAVASCRIPT_KEY', 'test-only-key');
+  vi.stubEnv('NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY', 'test-only-key');
   vi.stubGlobal(
     'ResizeObserver',
     class {

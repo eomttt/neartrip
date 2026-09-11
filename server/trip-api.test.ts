@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Server } from 'node:http';
-import { createApp } from './app';
+import { createTestServer } from './test-server';
 import { demoOrigin, demoPlaces } from './demo';
 import { itinerarySchema, placeSchema } from '../src/domains/trip/models/model-trip';
 import { z } from 'zod';
@@ -10,7 +10,9 @@ let baseUrl: string;
 beforeAll(async () => {
   vi.stubEnv('DEMO_MODE', 'true');
   await new Promise<void>((resolve, reject) => {
-    server = createApp().listen(0, '127.0.0.1', (error) => (error ? reject(error) : resolve()));
+    server = createTestServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
   });
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('테스트 서버 주소 없음');

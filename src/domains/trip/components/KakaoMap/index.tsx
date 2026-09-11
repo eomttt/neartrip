@@ -97,7 +97,7 @@ export function KakaoMap({
 
   useEffect(() => {
     let active = true;
-    const key: unknown = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY;
+    const key: unknown = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
     if (typeof key !== 'string' || !key) {
       setError('카카오 JavaScript 키를 설정하면 이곳에 지도가 표시돼요.');
       return;

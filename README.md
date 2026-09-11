@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-화면은 http://127.0.0.1:5173, API 서버는 http://127.0.0.1:3001에서 실행됩니다. Vite가 `/api` 요청을 서버로 전달합니다. 기본 포트가 사용 중이면 기존 프로세스를 확인한 뒤 포트를 조정하세요.
+화면과 API는 모두 http://127.0.0.1:5173에서 실행됩니다. Next.js App Router가 `/api` 요청을 직접 받습니다. 별도 Express 서버는 실행하지 않습니다. 기본 포트가 사용 중이면 기존 프로세스를 확인한 뒤 포트를 조정하세요.
 
 ## 두 가지 실행 모드
 
@@ -21,21 +21,23 @@ npm run dev
 
 ```dotenv
 KAKAO_REST_API_KEY=카카오_REST_API_키
-VITE_KAKAO_JAVASCRIPT_KEY=카카오_JavaScript_키
+NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY=카카오_JavaScript_키
 DEMO_MODE=false
 ```
 
 카카오디벨로퍼스에서 앱을 만들고 카카오맵을 활성화합니다. JavaScript 키의 허용 도메인에 `http://127.0.0.1:5173`과 `http://localhost:5173`을 등록합니다. 변경 후 개발 서버를 다시 실행합니다.
 
-REST 키는 서버에서만 사용합니다. `VITE_` 접두사가 붙은 값은 브라우저 번들에 들어가므로 REST 키에는 붙이지 않습니다. `.env.local`은 Git에서 제외됩니다. 예시 모드는 외부 지도 API를 호출하지 않습니다.
+REST 키는 서버에서만 사용합니다. `NEXT_PUBLIC_` 접두사가 붙은 값은 브라우저 번들에 들어가므로 REST 키에는 붙이지 않습니다. `.env.local`은 Git에서 제외됩니다. 예시 모드는 외부 지도 API를 호출하지 않습니다.
 
 ## 1Password로 연결한 로컬 환경
 
-이 Mac에서는 1Password Developer Environment `neartrip`을 프로젝트의 `.env.local`에 마운트했습니다. `KAKAO_REST_API_KEY`, `VITE_KAKAO_JAVASCRIPT_KEY`, `DEMO_MODE`를 보관하며 키 값은 저장소에 넣지 않습니다. 실행할 때 1Password가 잠겨 있으면 잠금을 해제하고 접근 요청을 승인하세요.
+이 Mac에서는 1Password Developer Environment `neartrip`을 `.env.local`에 마운트했습니다. Next.js가 이 파일을 환경변수로 읽습니다. 1Password가 잠겨 있으면 잠금을 해제하고 접근 요청을 승인하세요.
 
-개발 서버는 환경변수를 한 번 읽은 뒤 API 서버와 Vite에 전달합니다. 1Password 마운트는 일반 파일과 달리 FIFO이므로 두 프로세스가 동시에 읽으면 한쪽에 빈 값이 들어갈 수 있습니다. 환경변수를 바꾼 뒤에는 `npm run dev`를 다시 실행하세요.
+기존 마운트의 `VITE_KAKAO_JAVASCRIPT_KEY`는 `next.config.ts`에서 새 `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY`로 호환합니다. 키를 복사하거나 기존 마운트를 바꿀 필요가 없습니다. 새 환경에서는 `.env.example`의 이름을 쓰세요.
 
-2026-09-10 실연동 검증에는 기존 `엄현태` 앱의 카카오맵 무료 쿼터를 사용했습니다. 새 `가까이 neartrip` 앱도 생성돼 있지만 유료 API 설정은 하지 않았습니다. 기존 앱의 도메인 6개를 유지하고 `http://127.0.0.1:5173`, `http://localhost:5173`을 추가했습니다. 다른 Mac에서는 별도로 키를 연결해야 합니다.
+REST 키는 서버에서만 읽습니다. 공개 JavaScript 키는 빌드 시 브라우저 번들에 들어가므로 변경 후 다시 빌드해야 합니다. `.env.local`은 일반 파일이 아닌 FIFO이며 내용을 출력하거나 Git에 넣지 않습니다.
+
+2026-09-10 실연동 검증에는 기존 카카오 앱의 무료 쿼터를 사용했습니다. 등록한 로컬 허용 도메인은 `http://127.0.0.1:5173`과 `http://localhost:5173`입니다. 다른 환경에서는 키와 허용 도메인을 따로 연결해야 합니다.
 
 ## 최소 기능
 
@@ -99,15 +101,29 @@ npm run format:check
 
 ## 구성
 
-`src/pages/TripPage`는 두 단계 전환과 지도 초점을 연결합니다. 화면 전용 헤더·도움말과 바텀 시트는 페이지의 `components`에 둡니다. 출발점 검색, 주변 장소 목록, 지도 표시는 `src/domains/trip/components`에서 맡습니다.
+`src/app/_components/TripPage`는 두 단계 전환과 지도 초점을 연결합니다. 화면 전용 헤더·도움말과 바텀 시트는 페이지의 `components`에 둡니다. 출발점 검색, 주변 장소 목록, 지도 표시는 `src/domains/trip/components`에서 맡습니다.
 
 여행 상태와 주변 검색 상태는 도메인 `hooks`에 둡니다. `tripQueries`는 전체·쿼리 종류·개별 조건 순으로 캐시 키를 구성합니다. 동선 생성은 `postTripPlanMutations`에서 정의하며 선택이 바뀌면 이전 요청을 취소합니다.
 
 스타일은 담당 페이지·컴포넌트 옆의 `style.css`에 둡니다. `src/common`에는 HTTP 요청, 지도 SDK 로더, 공통 UI와 기본 스타일만 둡니다. 공통 스타일을 먼저 불러온 뒤 컴포넌트와 페이지 스타일을 적용합니다.
 
-`server`는 키를 보호하면서 카카오 API 응답을 검증하고 앱의 모델로 바꿉니다.
+`src/app/page.tsx`와 `layout.tsx`가 Next 라우트와 공통 QueryProvider를 연결합니다. 기존 `src/pages`는 Next의 Pages Router로 해석되므로 페이지 조합을 `src/app/_components`로 옮겼습니다. `domains`와 `common`은 기존 책임을 유지합니다.
 
-빌드 후 `npm start`로 API와 `dist`를 함께 제공합니다. 현재 서버는 로컬 주소에만 바인딩됩니다. 외부 배포는 별도 작업이며, 이 저장소를 GitHub에 올리는 것만으로 웹사이트가 배포되지는 않습니다.
+`src/app/api/*/route.ts`가 HTTP 요청을 받습니다. `server/trip-service.ts`는 여행 계획을 만들고 `server/kakao.ts`는 공급자 응답을 앱 모델로 바꿉니다. 두 모듈은 `server-only` 경계 안에 있습니다.
+
+빌드 후 `npm start`로 화면과 API를 함께 제공합니다. 기본 포트는 3000이며 `PORT`로 바꿀 수 있습니다. 프로덕션 서버는 `0.0.0.0`에 바인딩합니다. Vite는 Vitest의 테스트 실행에만 사용합니다.
+
+## Vercel 배포 준비
+
+Vercel에서 이 저장소를 가져오고 Framework Preset을 Next.js로 선택합니다. 빌드는 `npm run build`이며 출력 폴더를 직접 지정하지 않습니다. `KAKAO_REST_API_KEY`, `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY`, `DEMO_MODE=false`를 배포 환경변수에 등록합니다.
+
+배포 URL을 카카오 JavaScript 키의 허용 도메인에 추가해야 실제 지도가 표시됩니다. Preview와 Production의 도메인·환경변수는 별도로 확인하세요. 저장소의 공개 전환이나 push만으로 Vercel 프로젝트가 생성되지는 않습니다.
+
+API는 요청마다 실행하고 응답에 `Cache-Control: no-store`를 설정합니다. 동선 요청의 JSON 본문은 20KB로 제한합니다. 요청 제한은 실행 인스턴스별 분당 60회이며 Vercel의 여러 함수·인스턴스 전체를 합산하는 한도는 아닙니다.
+
+Vercel에서는 플랫폼이 설정하는 `x-forwarded-for`로 클라이언트를 구분합니다. 로컬·직접 호스팅은 임의 전달 헤더를 신뢰하지 않고 같은 버킷을 씁니다. 공개 운영의 전역 호출량 제한은 배포 단계에서 WAF나 공유 저장소를 연결해 설정해야 합니다.
+
+동선 API는 Node.js 런타임과 최대 300초 실행 설정을 사용합니다. 실제 실행 한도는 호스팅 플랜의 제약을 따릅니다. 이번 Next 전환은 Vercel 계정 연결이나 실제 배포를 포함하지 않습니다.
 
 ## 참고 문서
 
@@ -128,3 +144,13 @@ npm run format:check
 2026-09-10 이동 안내 바텀 시트를 390×844와 360×640에서 확인했습니다. 구간 선택 시 시트 닫힘과 지도 이동 표시 재생, 시트 내부 스크롤, 바깥 영역 클릭 후 지도 복귀를 확인했습니다. 테스트 59개와 TypeScript 검사, 빌드, 포맷 검사를 통과했습니다.
 
 2026-09-10 구조 정리 후 테스트 60개, TypeScript 검사와 빌드를 통과했습니다. 예시 모드에서 모바일 장소 목록 스크롤, 순서 변경, 동선 생성, 이동 안내 시트와 구간 강조를 확인했습니다. 동선 생성 중 선택을 바꾸면 이전 응답을 버리는 회귀 테스트를 추가했습니다.
+
+## Next.js 전환 검증 — 2026-09-11
+
+Next.js 16.3.4 App Router로 전환했습니다. 기존 화면·경로 테스트 60개와 새 API 경계 테스트 9개가 통과했습니다. 프로덕션 빌드와 TypeScript 검사를 통과했고, 브라우저 번들에 REST 키 환경변수 참조나 카카오 REST 호출 모듈이 포함되지 않는 것을 확인했습니다.
+
+프로덕션 예시 모드에서 장소 선택·왕복 동선·안내 시트를 확인했습니다. 390×844와 360×640 화면에서 페이지 넘침 없이 장소 목록 안에서 스크롤합니다. 기존 1Password 마운트로 실제 장소 검색·주변 목록·성수역에서 뚝섬역까지의 도보 동선과 지도·세부 안내를 확인했습니다.
+
+가까운 두 장소 사이에 빈 카카오 경로 목록이 반환되는 기존 오류는 [#9](https://github.com/eomttt/neartrip/issues/9)에 기록했습니다. 전환 이전 코드에서도 같은 오류가 재현됐습니다. 추가 조회 실패 때 경로를 보존하는 [#7](https://github.com/eomttt/neartrip/issues/7)도 이번 전환에 포함하지 않았습니다.
+
+전환 티켓은 [#8](https://github.com/eomttt/neartrip/issues/8)입니다. Vercel 실제 배포와 배포 도메인의 카카오 허용 설정은 아직 하지 않았습니다.

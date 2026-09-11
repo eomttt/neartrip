@@ -4,7 +4,7 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Server } from 'node:http';
-import { createApp } from '../../../server/app';
+import { createTestServer } from '../../../../server/test-server';
 import { TripPage } from '.';
 
 const nativeFetch = globalThis.fetch;
@@ -14,7 +14,9 @@ let baseUrl: string;
 beforeAll(async () => {
   vi.stubEnv('DEMO_MODE', 'true');
   await new Promise<void>((resolve, reject) => {
-    server = createApp().listen(0, '127.0.0.1', (error) => (error ? reject(error) : resolve()));
+    server = createTestServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
   });
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('테스트 서버 주소 없음');

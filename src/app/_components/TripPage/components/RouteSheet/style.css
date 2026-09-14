@@ -27,8 +27,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .route-sheet .route-result,
-  .route-sheet .route-result:has([aria-expanded='true']) {
+  .route-sheet .route-result {
     display: flex;
     flex-direction: column;
     flex: 1;

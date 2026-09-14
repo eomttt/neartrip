@@ -6,3 +6,5 @@ package-lock.json
 .next
 .vercel
 next-env.d.ts
+# 공식 SHP에서 변환한 좌표 데이터
+server/data/seoul-crowding-areas.json

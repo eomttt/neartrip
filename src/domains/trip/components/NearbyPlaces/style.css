@@ -2,14 +2,6 @@
   .nearby-section {
     margin-top: 29px;
   }
-  .category-filters {
-    display: flex;
-    gap: 6px;
-    margin: 14px 0 17px;
-  }
-  .category-filters button {
-    flex: 1;
-  }
   .results-caption {
     display: flex;
     justify-content: space-between;
@@ -48,18 +40,20 @@
     border: 1px solid var(--border);
     border-radius: 6px;
   }
+  .recommendation-heading {
+    display: grid;
+    gap: var(--spacing);
+    padding: calc(var(--spacing) * 3) 0 var(--spacing);
+    color: var(--foreground);
+    font-size: var(--text-xs);
+  }
+  .recommendation-heading span {
+    color: var(--muted-foreground);
+    line-height: var(--text-xs--line-height);
+  }
   @media (min-width: 1600px) {
     .place-list {
       max-height: 490px;
-    }
-  }
-  @media (max-width: 1240px) {
-    .category-filters {
-      gap: 4px;
-    }
-    .category-filters button {
-      font-size: 10px;
-      padding: 9px 7px;
     }
   }
   @media (max-width: 1000px) {
@@ -74,8 +68,14 @@
     .place-list {
       max-height: 310px;
     }
-    .category-filters button {
-      font-size: 11px;
-    }
+  }
+}
+
+@layer components {
+  .tourism-source {
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--muted-foreground);
+    margin: 8px 0;
   }
 }

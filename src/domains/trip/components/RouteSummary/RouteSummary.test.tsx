@@ -47,28 +47,45 @@ it('주의 구간에서도 경고와 이동 안내, 합산 시간을 함께 보�
   expect(screen.queryByText('같은 위치 · 이동 없음')).toBeNull();
 });
 
-it('구간 안내를 키보드로 열고 닫으며 새 주의 동선은 다시 펼친다', async () => {
+it('구간을 각각 접고 펼쳐도 목록과 다른 구간 및 지도 선택은 유지한다', async () => {
   const user = userEvent.setup();
   const destination = { ...demoOrigin, id: 'destination', name: '도착 장소', lat: 37.55 };
   const leg = createDemoLeg(demoOrigin, destination);
   const props = {
     destination: null,
     origin: demoOrigin,
-    itinerary: { demo: true, places: [destination], legs: [leg] },
+    itinerary: {
+      demo: false,
+      places: [destination],
+      legs: [leg, createDemoLeg(destination, demoOrigin)],
+    },
     onEdit: vi.fn(),
     onFocusRoute: vi.fn(),
   };
   const { rerender } = render(withQueries(<RouteSummary {...props} />));
-  const toggle = screen.getByRole('button', { name: '구간별 이동 보기' });
-  expect(toggle.getAttribute('aria-expanded')).toBe('false');
-  expect(screen.queryByRole('region', { name: '구간별 이동 안내' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '구간별 이동 보기' })).toBeNull();
+  const region = screen.getByRole('region', { name: '구간별 이동 안내' });
+  expect(region.tabIndex).toBe(0);
+  const toggle = screen.getByRole('button', { name: '1구간 접기' });
+  const controlled = document.getElementById(toggle.getAttribute('aria-controls') ?? '');
+  expect(controlled?.hidden).toBe(false);
   toggle.focus();
   await user.keyboard('{Enter}');
-  const details = screen.getByRole('region', { name: '구간별 이동 안내' });
-  expect(details.tabIndex).toBe(0);
-  expect(toggle.getAttribute('aria-controls')).toBe(details.id);
+  expect(screen.getByRole('button', { name: '1구간 펼치기' }).getAttribute('aria-expanded')).toBe(
+    'false',
+  );
+  expect(controlled?.hidden).toBe(true);
+  expect(screen.getByRole('button', { name: '2구간 접기' }).getAttribute('aria-expanded')).toBe(
+    'true',
+  );
+  expect(screen.queryByRole('link', { name: /^1구간 카카오맵/ })).toBeNull();
+  expect(screen.getByRole('link', { name: /^2구간 카카오맵/ })).toBeTruthy();
+  expect(props.onFocusRoute).not.toHaveBeenCalled();
   await user.keyboard(' ');
-  expect(screen.queryByRole('region', { name: '구간별 이동 안내' })).toBeNull();
+  expect(controlled?.hidden).toBe(false);
+  await user.click(screen.getByRole('button', { name: '1구간 접기' }));
+  await user.click(screen.getByRole('button', { name: /^1\. .* 지도에서 보기$/ }));
+  expect(props.onFocusRoute).toHaveBeenCalledWith(0, null);
   rerender(
     withQueries(
       <RouteSummary
@@ -77,10 +94,12 @@ it('구간 안내를 키보드로 열고 닫으며 새 주의 동선은 다시 �
       />,
     ),
   );
+  expect(screen.getByRole('button', { name: '1구간 접기' }).getAttribute('aria-expanded')).toBe(
+    'true',
+  );
+  await user.click(screen.getByRole('button', { name: '1구간 접기' }));
+  expect(screen.getByText('도보 20분을 넘어요.').closest('[hidden]')).toBeNull();
   expect(screen.getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
-  expect(
-    screen.getByRole('button', { name: '구간별 이동 보기' }).getAttribute('aria-expanded'),
-  ).toBe('true');
 });
 
 it('각 구간의 방향과 이동수단에 맞는 카카오맵 링크를 별도로 제공한다', async () => {
@@ -96,7 +115,6 @@ it('각 구간의 방향과 이동수단에 맞는 카카오맵 링크를 별도
         destination={null}
         onEdit={vi.fn()}
         onFocusRoute={onFocusRoute}
-        initiallyExpanded
         itinerary={{
           demo: false,
           places: [destination],
@@ -146,7 +164,6 @@ it('가상 장소의 예시 동선에는 외부 길찾기 링크를 표시하지
         destination={null}
         onEdit={vi.fn()}
         onFocusRoute={vi.fn()}
-        initiallyExpanded
         itinerary={{
           demo: true,
           places: [destination],

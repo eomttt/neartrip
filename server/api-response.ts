@@ -1,6 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
-import { ProviderError } from './kakao';
+import { ProviderError } from './provider-error';
 import { recordRequestBody, recordRequestError, traceApiRequest } from './request-trace';
 
 class RequestError extends Error {

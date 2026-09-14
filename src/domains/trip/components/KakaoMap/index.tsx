@@ -4,7 +4,52 @@ import { Button } from '@/common/design-system/components/Button';
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
 import { loadKakaoMap } from '../../../../common/maps/kakao-loader';
-import type { Itinerary, Place } from '../../models/model-trip';
+import { categoryLabels, type Category, type Itinerary, type Place } from '../../models/model-trip';
+import { getKakaoPlaceDetailUrl } from '../../utils/place-detail';
+import { distanceMeters, formatDistance } from '../../utils/route-order';
+
+const categoryPinLabels: Record<Category, string> = {
+  restaurant: 'F',
+  cafe: 'C',
+  attraction: 'P',
+  bar: 'B',
+};
+
+function createMapPlacePreview(place: Place, origin: Place | null, id: string): HTMLElement {
+  const preview = document.createElement('article');
+  preview.id = id;
+  preview.className = 'map-place-preview';
+  preview.setAttribute('role', 'tooltip');
+  preview.setAttribute('aria-label', `${place.name} 장소 정보`);
+
+  const category = document.createElement('span');
+  category.className = 'map-place-preview-category';
+  category.textContent = categoryLabels[place.category];
+  const name = document.createElement('strong');
+  name.textContent = place.name;
+  const address = document.createElement('p');
+  address.className = 'map-place-preview-address';
+  address.textContent = place.address;
+  const meta = document.createElement('div');
+  meta.className = 'map-place-preview-meta';
+  if (origin) {
+    const distance = document.createElement('span');
+    distance.textContent = `직선 ${formatDistance(distanceMeters(origin, place))}`;
+    meta.append(distance);
+  }
+  const detailUrl = getKakaoPlaceDetailUrl(place.url);
+  if (detailUrl) {
+    const detail = document.createElement('a');
+    detail.href = detailUrl;
+    detail.target = '_blank';
+    detail.rel = 'noopener noreferrer';
+    detail.textContent = '후기·상세 ↗';
+    detail.setAttribute('aria-label', `${place.name} 카카오맵 후기·상세 (새 창)`);
+    meta.append(detail);
+  }
+  preview.append(category, name, address, meta);
+  return preview;
+}
 
 interface Props {
   ref?: Ref<RouteMapHandle>;
@@ -149,13 +194,17 @@ export function KakaoMap({
         ...(destination ? [destination] : []),
       ].map((place) => [place.id, place]),
     );
+    let markerIndex = 0;
     for (const place of visible.values()) {
       const isOrigin = origin?.id === place.id;
       const isDestination = destination?.id === place.id;
       const index = selected.findIndex((item) => item.id === place.id);
-      const content = document.createElement('button');
-      content.className = `map-pin pin-${place.category} ${isOrigin ? 'pin-origin' : ''} ${index >= 0 ? 'pin-selected' : ''} ${isDestination ? 'pin-destination' : ''}`;
-      content.textContent = isOrigin
+      const canSelect = !isOrigin && !isDestination && index < 0;
+      const marker = document.createElement('div');
+      marker.className = 'map-place-marker';
+      const pin = document.createElement('button');
+      pin.className = `map-pin pin-${place.category} ${isOrigin ? 'pin-origin' : ''} ${index >= 0 ? 'pin-selected' : ''} ${isDestination ? 'pin-destination' : ''}`;
+      pin.textContent = isOrigin
         ? isDestination
           ? '왕복'
           : '출발'
@@ -163,28 +212,29 @@ export function KakaoMap({
           ? '도착'
           : index >= 0
             ? String(index + 1)
-            : place.category === 'cafe'
-              ? 'C'
-              : place.category === 'restaurant'
-                ? 'F'
-                : 'P';
-      content.setAttribute(
+            : categoryPinLabels[place.category];
+      pin.setAttribute(
         'aria-label',
-        `${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : ' 선택'}`,
+        `${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : index >= 0 ? ' 선택됨' : ' 선택'}`,
       );
-      content.title = place.name;
-      if (!isOrigin && !isDestination) content.onclick = () => handlePlaceSelect(place);
+      pin.setAttribute('aria-disabled', String(!canSelect));
+      pin.title = place.name;
+      const previewId = `map-place-preview-${markerIndex}`;
+      markerIndex += 1;
+      pin.setAttribute('aria-describedby', previewId);
+      if (canSelect) pin.onclick = () => handlePlaceSelect(place);
+      marker.append(pin, createMapPlacePreview(place, origin, previewId));
       const position = new kakao.maps.LatLng(place.lat, place.lng);
       viewBounds.extend(position);
-      overlays.push(
-        new kakao.maps.CustomOverlay({
-          map: currentMap,
-          position,
-          content,
-          yAnchor: 1,
-          zIndex: isOrigin || isDestination ? 5 : index >= 0 ? 4 : 3,
-        }),
-      );
+      const zIndex = isOrigin || isDestination ? 5 : index >= 0 ? 4 : 3;
+      const overlay = new kakao.maps.CustomOverlay({
+        map: currentMap,
+        position,
+        content: marker,
+        yAnchor: 1,
+        zIndex,
+      });
+      overlays.push(overlay);
     }
     for (const leg of itinerary?.legs ?? []) {
       for (const segment of leg.segments) {

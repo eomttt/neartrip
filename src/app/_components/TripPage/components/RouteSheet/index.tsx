@@ -11,7 +11,9 @@ import {
 import { RouteSummary } from '@/domains/trip/components/RouteSummary';
 import './style.css';
 
-type Props = Omit<ComponentProps<typeof RouteSummary>, 'initiallyExpanded'> & {
+type Props = ComponentProps<typeof RouteSummary> & {
+  isPlanning: boolean;
+  onRebuild: () => void;
   onReturnFocus: (target: 'map' | 'discover') => void;
 };
 export function RouteSheet({
@@ -19,8 +21,10 @@ export function RouteSheet({
   destination,
   itinerary,
   activeRoute,
+  isPlanning,
   onFocusRoute,
   onEdit,
+  onRebuild,
   onReturnFocus,
 }: Props) {
   const [showRouteDetails, setShowRouteDetails] = useState(false);
@@ -41,8 +45,9 @@ export function RouteSheet({
             </Button>
           </DialogTrigger>
         ) : (
-          <Button className="w-full" onClick={onEdit}>
-            <ListOrdered size={17} /> 장소 선택으로 돌아가기
+          <Button className="w-full" disabled={isPlanning} onClick={onRebuild}>
+            {isPlanning ? <span className="spinner" /> : <ListOrdered size={17} />}
+            {isPlanning ? '동선을 다시 짜는 중이에요' : '변경한 장소로 동선 다시 짜기'}
           </Button>
         )}
       </div>
@@ -74,7 +79,6 @@ export function RouteSheet({
           origin={origin}
           destination={destination}
           itinerary={itinerary}
-          initiallyExpanded
         />
       </DialogContent>
     </Dialog>

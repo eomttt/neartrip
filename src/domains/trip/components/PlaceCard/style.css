@@ -1,140 +1,115 @@
 @layer components {
   .place-card {
     display: flex;
-    align-items: center;
-    gap: 11px;
-    padding: 15px 0;
+    align-items: flex-start;
+    gap: calc(var(--spacing) * 3);
+    padding-block: calc(var(--spacing) * 4);
     border-bottom: 1px solid var(--border);
-    position: relative;
   }
-  .place-card.is-selected .place-copy h3 {
-    color: var(--green);
+  .place-card.is-selected .place-title h3 {
+    color: var(--primary);
   }
   .place-art {
-    width: 70px;
-    height: 76px;
-    border-radius: 9px;
-    position: relative;
+    width: calc(var(--spacing) * 14);
+    height: calc(var(--spacing) * 14);
+    border-radius: var(--radius-lg);
     display: grid;
     place-items: center;
-    overflow: hidden;
     flex-shrink: 0;
-  }
-  .art-restaurant {
-    background: #f1e2d4;
-    color: #a36c51;
+    background: var(--secondary);
+    color: var(--primary);
   }
   .art-cafe {
-    background: #e9dfc8;
-    color: #96713f;
+    background: color-mix(in srgb, var(--warning) 12%, var(--background));
+    color: var(--warning);
   }
-  .art-attraction {
-    background: #dce8d7;
-    color: #729367;
+  .art-restaurant {
+    background: color-mix(in srgb, var(--destructive) 10%, var(--background));
+    color: var(--destructive);
   }
-  .place-art svg {
-    z-index: 1;
-  }
-  .art-ring {
-    position: absolute;
-    width: 55px;
-    height: 55px;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-    opacity: 0.2;
-  }
-  .art-spark {
-    position: absolute;
-    right: 3px;
-    bottom: 1px;
-    font-size: 37px;
-    opacity: 0.16;
+  .art-bar {
+    background: color-mix(in srgb, #87647f 12%, var(--background));
+    color: #76566f;
   }
   .place-copy {
     min-width: 0;
     flex: 1;
   }
-  .category-label {
-    font-size: 9px;
-    display: block;
-    margin-bottom: 4px;
+  .place-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: calc(var(--spacing) * 1.5);
   }
-  .text-restaurant {
-    color: #ae755e;
-  }
-  .text-cafe {
-    color: #9d7c45;
-  }
-  .text-attraction {
-    color: #6d9368;
-  }
-  .place-copy h3 {
-    font-size: 13px;
+  .place-title h3 {
+    min-width: 0;
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
     font-weight: 600;
-    letter-spacing: -0.3px;
-    margin-bottom: 5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
-  .place-copy p {
-    font-size: 10px;
-    color: #8a9287;
-    line-height: 1.6;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .category-label {
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    color: var(--muted-foreground);
+  }
+  .place-address {
+    margin-top: var(--spacing);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    color: var(--muted-foreground);
+    overflow-wrap: anywhere;
+  }
+  .place-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: calc(var(--spacing) * 3);
+    margin-top: var(--spacing);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+  }
+  .distance,
+  .place-detail-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing);
   }
   .distance {
-    display: flex;
-    gap: 3px;
-    align-items: center;
-    font-size: 9px;
-    color: #8b9485;
-    margin-top: 5px;
+    color: var(--muted-foreground);
+  }
+  .place-detail-link {
+    min-height: calc(var(--spacing) * 6);
+    color: var(--primary);
+    border-radius: var(--radius-sm);
+    text-underline-offset: var(--spacing);
+  }
+  .place-detail-link:hover {
+    text-decoration: underline;
   }
   .add-place {
-    align-self: center;
-    width: 28px;
-    height: 28px;
-    border: 1px solid #d7dfd0;
-    background: #fff;
-    border-radius: 50%;
-    color: #7c8c70;
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
+    align-self: flex-start;
   }
-  @media (max-width: 1240px) {
-    .place-art {
-      width: 60px;
-      height: 70px;
-    }
-    .place-copy p {
-      max-width: 145px;
-    }
-  }
-  @media (max-width: 680px) {
-    .place-art {
-      width: 65px;
-      height: 70px;
-    }
-    .place-copy p {
-      max-width: none;
-    }
-    .place-copy h3 {
-      font-size: 14px;
-    }
-  }
-  .place-copy h3 {
-    font-size: 14px;
-  }
-  .place-copy p {
-    max-width: none;
-  }
-  .place-copy .place-address {
-    white-space: normal;
-    line-height: 1.6;
+  .place-description,
+  .tourism-details {
+    margin-top: calc(var(--spacing) * 2);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
     color: var(--muted-foreground);
+    overflow-wrap: anywhere;
+  }
+  .pet-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing);
+    padding: var(--spacing) calc(var(--spacing) * 2);
+    border-radius: var(--radius-sm);
+    background: var(--secondary);
+    color: var(--primary);
+  }
+  .tourism-details summary {
+    cursor: pointer;
+    color: var(--primary);
+    padding-block: calc(var(--spacing) * 1.5);
   }
 }

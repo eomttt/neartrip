@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
-export const categorySchema = z.enum(['restaurant', 'cafe', 'attraction']);
+export const categorySchema = z.enum(['restaurant', 'cafe', 'attraction', 'bar']);
 export type Category = z.infer<typeof categorySchema>;
 export const categoryLabels: Record<Category, string> = {
   restaurant: '맛집',
   cafe: '카페',
   attraction: '갈 만한 곳',
+  bar: '술 한잔',
 };
 export const coordinateSchema = z.object({
   lat: z.number().min(32).max(39.5),
@@ -18,6 +19,13 @@ export const placeSchema = coordinateSchema.extend({
   category: categorySchema,
   description: z.string().max(300),
   url: z.string().default(''),
+  tourism: z
+    .object({
+      kind: z.enum(['festival', 'pet']),
+      period: z.string().max(60).optional(),
+      conditions: z.string().max(1200).optional(),
+    })
+    .optional(),
 });
 export type Place = z.infer<typeof placeSchema>;
 export type Coordinate = z.infer<typeof coordinateSchema>;

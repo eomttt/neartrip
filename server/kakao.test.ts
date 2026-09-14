@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getLeg,
   isShortTransit,
+  nearbyPlaces,
   transitResponseToCandidates,
   walkResponseToSegments,
 } from './kakao';
 import type { Segment } from '../src/domains/trip/models/model-trip';
 import { demoOrigin } from './demo';
+import { buildTripPlan } from './trip-service';
 
 function transit(stops: number | null): Segment {
   return { mode: 'bus', seconds: 300, meters: 1_000, instruction: '버스', stops, points: [] };
@@ -106,6 +108,36 @@ afterEach(() => {
 });
 
 describe('카카오 실응답에서 확인한 대중교통 경계', () => {
+  it('술 한잔은 주변 술집 키워드로 조회하고 별도 카테고리로 반환한다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const fetchMock = vi.fn().mockResolvedValue(
+      apiResponse({
+        documents: [
+          {
+            id: 'bar-1',
+            place_name: '저녁의 잔',
+            address_name: '서울 성동구 성수동',
+            road_address_name: '서울 성동구 연무장길 1',
+            category_group_code: 'FD6',
+            category_name: '음식점 > 술집',
+            x: '127.055',
+            y: '37.544',
+            place_url: 'https://place.map.kakao.com/1',
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const places = await nearbyPlaces({ lat: 37.544, lng: 127.055 }, 'bar', 1_000);
+    const requestUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
+
+    expect(requestUrl.pathname).toBe('/v2/local/search/keyword.json');
+    expect(requestUrl.searchParams.get('query')).toBe('술집');
+    expect(requestUrl.searchParams.get('category_group_code')).toBe('FD6');
+    expect(places[0]?.category).toBe('bar');
+  });
+
   it.each([
     { stops: ['성수', '건대입구'], count: 1, allowed: true },
     { stops: ['성수', '건대입구', '구의', '강변', '잠실나루', '잠실'], count: 5, allowed: true },
@@ -285,5 +317,74 @@ describe('권장 조건을 넘는 경로도 경고와 함께 표시', () => {
     const leg = await getLeg(from, to);
     expect(leg.segments).toEqual([]);
     expect(leg.warning).toContain('이동 경로를 찾지 못했어요');
+  });
+});
+
+const samePointResponse = {
+  status: 'SAME_POINT',
+  route: { legs: [], properties: { totalDistance: 0, totalTime: 0 } },
+};
+
+describe('카카오의 같은 지점 판정', () => {
+  it('SAME_POINT의 빈 경로를 형식 오류로 처리하지 않는다', () => {
+    expect(walkResponseToSegments(samePointResponse)).toEqual([]);
+  });
+
+  it('같은 지점이면 대중교통을 조회하지 않고 위치 확인 안내를 남긴다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse(samePointResponse));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const leg = await getLeg(from, { ...to, lat: from.lat + 0.00001, lng: from.lng });
+
+    expect(leg.segments).toEqual([]);
+    expect(leg.warning).toContain('같은 지점');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('가깝더라도 카카오가 반환한 정상 도보 경로를 유지한다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(apiResponse(walkResponse(120))));
+
+    const leg = await getLeg(from, { ...to, lat: from.lat + 0.00001, lng: from.lng });
+
+    expect(leg.segments).toEqual(walkResponseToSegments(walkResponse(120)));
+    expect(leg.warning).toBeNull();
+  });
+
+  it('연결 도보가 같은 지점으로 판정되면 대중교통 경로를 끊긴 것으로 보지 않는다', async () => {
+    mockRoutes({ status: 'NO_RESULTS' }, [transitStep(['A', 'B'])]).mockImplementation(async () =>
+      apiResponse(samePointResponse),
+    );
+
+    const leg = await getLeg(demoOrigin, { ...to, lat: 37.56 });
+
+    expect(leg.segments.map((segment) => segment.mode)).toEqual(['subway']);
+    expect(leg.warning).toBeNull();
+  });
+
+  it('복귀 구간이 같은 지점이어도 다른 구간과 방문 순서를 보존한다', async () => {
+    vi.stubEnv('DEMO_MODE', 'false');
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(apiResponse(walkResponse(120)))
+      .mockResolvedValueOnce(apiResponse(walkResponse(180)))
+      .mockResolvedValueOnce(apiResponse(samePointResponse));
+    vi.stubGlobal('fetch', fetchMock);
+    const nearOrigin = { ...from, id: 'near-origin', lat: from.lat + 0.00001 };
+
+    const plan = await buildTripPlan({
+      origin: from,
+      places: [to, nearOrigin],
+      order: 'manual',
+    });
+
+    expect(plan.places.map((place) => place.id)).toEqual([to.id, nearOrigin.id]);
+    expect(plan.legs).toHaveLength(3);
+    expect(plan.legs.slice(0, 2).every((leg) => leg.segments.length > 0)).toBe(true);
+    expect(plan.legs[2]).toMatchObject({ from: nearOrigin, to: from, segments: [] });
+    expect(plan.legs[2]?.warning).toContain('같은 지점');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });

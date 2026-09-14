@@ -2,13 +2,17 @@ import { createServer } from 'node:http';
 import { GET as config } from '../src/app/api/config/route';
 import { GET as search } from '../src/app/api/search/route';
 import { GET as nearby } from '../src/app/api/nearby/route';
+import { GET as discover } from '../src/app/api/discover/route';
+import { POST as crowding } from '../src/app/api/crowding/route';
 import { POST as plan } from '../src/app/api/plan/route';
 
 const routes: Record<string, (request: Request) => Promise<Response>> = {
   'GET /api/config': config,
   'GET /api/search': search,
   'GET /api/nearby': nearby,
+  'GET /api/discover': discover,
   'POST /api/plan': plan,
+  'POST /api/crowding': crowding,
 };
 
 export function createTestServer() {

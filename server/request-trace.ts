@@ -5,10 +5,11 @@ import { z } from 'zod';
 
 const MAX_CALLS = 24;
 const MAX_BODY_BYTES = 6_000;
-const secretField = /authorization|cookie|password|secret|token|api.?key|headers/i;
+const secretField = /authorization|cookie|password|secret|token|api.?key|service.?key|headers/i;
 
 type LogValue = null | boolean | number | string | LogValue[] | { [key: string]: LogValue };
 interface ProviderCall {
+  provider: 'kakao' | 'tourapi' | 'seoul';
   leg: number | null;
   api: string;
   params: LogValue;
@@ -33,6 +34,7 @@ function redactText(value: string): string {
   for (const [name, secret] of Object.entries(process.env)) {
     if (secretField.test(name) && secret && secret.length >= 8) {
       result = result.split(secret).join('[REDACTED]');
+      result = result.split(encodeURIComponent(secret)).join('[REDACTED]');
     }
   }
   return result;
@@ -110,7 +112,8 @@ export function withTraceLeg<T>(leg: number, action: () => Promise<T>): Promise<
   return store ? context.run({ ...store, leg }, action) : action();
 }
 
-export async function traceKakaoCall<T>(
+export async function traceProviderCall<T>(
+  provider: 'kakao' | 'tourapi' | 'seoul',
   api: string,
   params: Record<string, string>,
   action: (record: (status: number, body: unknown) => void) => Promise<T>,
@@ -118,6 +121,7 @@ export async function traceKakaoCall<T>(
   const store = context.getStore();
   if (!store) return action(() => {});
   const call: ProviderCall = {
+    provider,
     leg: store.leg,
     api,
     params: bodyForLog(params),
@@ -160,15 +164,17 @@ export async function traceApiRequest(
   return context.run({ trace, leg: null }, async () => {
     const response = await action(trace.id);
     const url = new URL(request.url);
+    const partialFailure =
+      response.ok && (Boolean(trace.error) || trace.calls.some((call) => call.state === 'error'));
     const metadata = {
-      event: response.ok ? 'api_request' : 'api_failure',
+      event: partialFailure ? 'api_partial_failure' : response.ok ? 'api_request' : 'api_failure',
       traceId: trace.id,
       method: request.method,
       path: redactText(url.pathname).slice(0, 200),
       status: response.status,
       durationMs: Math.round(performance.now() - trace.startedAt),
     };
-    if (response.ok) {
+    if (response.ok && !partialFailure) {
       console.info(JSON.stringify(metadata));
     } else {
       const calls = [...trace.calls];
@@ -187,11 +193,21 @@ export async function traceApiRequest(
           },
           response: bodyForLog(await response.clone().json()),
           error: trace.error,
-          kakao: calls,
+          kakao: calls.filter((call) => call.provider === 'kakao'),
+          tourapi: calls.filter((call) => call.provider === 'tourapi'),
+          seoul: calls.filter((call) => call.provider === 'seoul'),
           omittedCalls,
         }),
       );
     }
     return response;
   });
+}
+
+export function traceKakaoCall<T>(
+  api: string,
+  params: Record<string, string>,
+  action: (record: (status: number, body: unknown) => void) => Promise<T>,
+) {
+  return traceProviderCall('kakao', api, params, action);
 }

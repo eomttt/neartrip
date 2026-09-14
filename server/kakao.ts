@@ -10,14 +10,8 @@ import type {
 } from '../src/domains/trip/models/model-trip';
 import { distanceMeters } from '../src/domains/trip/utils/route-order';
 
-export class ProviderError extends Error {
-  constructor(
-    message: string,
-    public status = 502,
-  ) {
-    super(message);
-  }
-}
+import { ProviderError } from './provider-error';
+export { ProviderError } from './provider-error';
 
 async function requestKakao<T>(
   path: string,
@@ -71,23 +65,27 @@ const documentSchema = z.object({
   place_url: z.string().default(''),
 });
 const placesResponseSchema = z.object({ documents: z.array(documentSchema) });
-const categoryCodes: Record<Category, string> = {
+const categoryCodes: Record<Exclude<Category, 'bar'>, string> = {
   restaurant: 'FD6',
   cafe: 'CE7',
   attraction: 'AT4',
 };
 
-function documentToPlace(document: z.infer<typeof documentSchema>): Place {
+function documentToPlace(
+  document: z.infer<typeof documentSchema>,
+  categoryOverride?: Category,
+): Place {
   return {
     id: document.id,
     name: document.place_name,
     address: document.road_address_name || document.address_name,
     category:
-      document.category_group_code === 'FD6'
+      categoryOverride ??
+      (document.category_group_code === 'FD6'
         ? 'restaurant'
         : document.category_group_code === 'CE7'
           ? 'cafe'
-          : 'attraction',
+          : 'attraction'),
     description: document.category_name.split(' > ').at(-1) || '주변에서 발견한 장소',
     lat: document.y,
     lng: document.x,
@@ -101,7 +99,7 @@ export async function searchPlaces(query: string): Promise<Place[]> {
     { query, size: '8' },
     (value) => placesResponseSchema.parse(value),
   );
-  return response.documents.map(documentToPlace);
+  return response.documents.map((document) => documentToPlace(document));
 }
 
 export async function nearbyPlaces(
@@ -109,6 +107,22 @@ export async function nearbyPlaces(
   category: Category,
   radius: number,
 ): Promise<Place[]> {
+  if (category === 'bar') {
+    const response = await requestKakao(
+      '/v2/local/search/keyword.json',
+      {
+        query: '술집',
+        category_group_code: 'FD6',
+        x: String(origin.lng),
+        y: String(origin.lat),
+        radius: String(radius),
+        sort: 'distance',
+        size: '15',
+      },
+      (value) => placesResponseSchema.parse(value),
+    );
+    return response.documents.map((document) => documentToPlace(document, 'bar'));
+  }
   const response = await requestKakao(
     '/v2/local/search/category.json',
     {
@@ -121,7 +135,7 @@ export async function nearbyPlaces(
     },
     (value) => placesResponseSchema.parse(value),
   );
-  return response.documents.map(documentToPlace);
+  return response.documents.map((document) => documentToPlace(document));
 }
 
 const pathSchema = z.object({ points: z.array(z.tuple([z.number(), z.number()])).min(2) });
@@ -133,6 +147,7 @@ const walkStepSchema = z.object({
   }),
   path: pathSchema,
 });
+const routingStatusSchema = z.object({ status: z.string() });
 const walkResponseSchema = z.object({
   status: z.string(),
   route: z
@@ -175,6 +190,7 @@ function routeParams(from: Coordinate, to: Coordinate) {
 }
 
 export function walkResponseToSegments(value: unknown): Segment[] {
+  if (routingStatusSchema.parse(value).status !== 'OK') return [];
   const data = walkResponseSchema.parse(value);
   if (data.status !== 'OK' || !data.route) return [];
   return data.route.legs.flatMap((leg) =>
@@ -230,8 +246,11 @@ export function isShortTransit(segments: Segment[]): boolean {
   );
 }
 
-async function getWalkSegments(from: Coordinate, to: Coordinate): Promise<Segment[]> {
-  return requestKakao('/v2/routing/walk', routeParams(from, to), walkResponseToSegments);
+async function getWalkRoute(from: Coordinate, to: Coordinate) {
+  return requestKakao('/v2/routing/walk', routeParams(from, to), (value) => ({
+    samePoint: routingStatusSchema.parse(value).status === 'SAME_POINT',
+    segments: walkResponseToSegments(value),
+  }));
 }
 
 async function completeTransitWalks(
@@ -248,17 +267,17 @@ async function completeTransitWalks(
     if (!start || !end) return { segments, connected: false };
     // 교통 경로와 장소 좌표 사이의 10m 이하 오차는 같은 지점으로 봅니다.
     if (distanceMeters(current, start) > 10) {
-      const connection = await getWalkSegments(current, start);
-      if (connection.length === 0) connected = false;
-      complete.push(...connection);
+      const connection = await getWalkRoute(current, start);
+      if (!connection.samePoint && connection.segments.length === 0) connected = false;
+      complete.push(...connection.segments);
     }
     complete.push(segment);
     current = end;
   }
   if (distanceMeters(current, to) > 10) {
-    const connection = await getWalkSegments(current, to);
-    if (connection.length === 0) connected = false;
-    complete.push(...connection);
+    const connection = await getWalkRoute(current, to);
+    if (!connection.samePoint && connection.segments.length === 0) connected = false;
+    complete.push(...connection.segments);
   }
   return { segments: complete, connected };
 }
@@ -288,7 +307,16 @@ function routeWarning(segments: Segment[], connected: boolean): string | null {
 
 export async function getLeg(from: Place, to: Place): Promise<Leg> {
   if (from.lat === to.lat && from.lng === to.lng) return { from, to, segments: [], warning: null };
-  const walk = await getWalkSegments(from, to);
+  const walking = await getWalkRoute(from, to);
+  if (walking.samePoint) {
+    return {
+      from,
+      to,
+      segments: [],
+      warning: '카카오맵에서 같은 지점으로 안내되는 구간이에요. 현장에서 위치를 확인해주세요.',
+    };
+  }
+  const walk = walking.segments;
   if (walk.length > 0 && totalSeconds(walk) <= 20 * 60) {
     return { from, to, segments: walk, warning: null };
   }

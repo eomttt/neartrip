@@ -15,6 +15,7 @@ import { TripMap } from '@/domains/trip/components/TripMap';
 import { TripHeader } from './components/TripHeader';
 import { RouteSheet } from './components/RouteSheet';
 import { TripEndpoints } from './components/TripEndpoints';
+import { MapPlaceFilters } from './components/MapPlaceFilters';
 import './style.css';
 
 export function TripPage() {
@@ -72,6 +73,10 @@ function Planner({
     routeMap.current?.highlightRoute(highlight);
   }
   const nearby = useNearbyPlaces(planner.origin, planner.destination);
+  const mapPlaces =
+    nearby.places.length > 0 || nearby.recommendations.length === 0
+      ? nearby.places
+      : nearby.recommendations;
 
   async function handleBuildPlan() {
     const result = await planner.buildPlan();
@@ -170,21 +175,37 @@ function Planner({
             demo={demo}
             origin={planner.origin}
             destination={planner.destination}
-            places={nearby.places}
+            places={mapPlaces}
             selected={planner.selected}
             itinerary={planner.itinerary}
             onSelect={(place) => {
+              if (planner.selected.some((item) => item.id === place.id)) return;
               planner.togglePlace(place);
-              setActiveView('discover');
             }}
+          />
+          <MapPlaceFilters
+            categories={nearby.categories}
+            radius={nearby.radius}
+            crowdingLevels={nearby.crowdingLevels}
+            petOnly={nearby.petOnly}
+            festivalOnly={nearby.festivalOnly}
+            placeCount={mapPlaces.length}
+            selectedCount={planner.selected.length}
+            onCategoryToggle={nearby.onCategoryToggle}
+            onCrowdingLevelToggle={nearby.onCrowdingLevelToggle}
+            onPetOnlyChange={nearby.onPetOnlyChange}
+            onFestivalOnlyChange={nearby.onFestivalOnlyChange}
+            onRadiusChange={nearby.onRadiusChange}
           />
           <RouteSheet
             origin={planner.origin}
             destination={planner.destination}
             itinerary={planner.itinerary}
             activeRoute={activeRoute}
+            isPlanning={planner.isPlanning}
             onFocusRoute={handleRouteFocus}
             onEdit={() => setActiveView('discover')}
+            onRebuild={handleBuildPlan}
             onReturnFocus={(target) => {
               (target === 'map' ? mapTab : discoverTab).current?.focus({ preventScroll: true });
             }}

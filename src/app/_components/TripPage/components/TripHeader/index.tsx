@@ -46,7 +46,7 @@ export function TripHeader({ demo, configured }: Props) {
               </DialogDescription>
             </DialogHeader>
             <ol className="list-decimal space-y-3 pl-5 text-sm leading-relaxed">
-              <li>숙소를 출발점으로 정하고 맛집·카페·가볼 만한 곳을 골라요.</li>
+              <li>숙소를 출발점으로 정하고 맛집·카페·가볼 만한 곳·술집을 골라요.</li>
               <li>숙소로 돌아오는 동선이 기본이에요. 마지막 도착점은 따로 정할 수도 있어요.</li>
               <li>
                 동선을 만들면 2단계 지도에서 확인해요. 이동 안내를 누르면 구간을 살펴볼 수 있어요.
@@ -68,8 +68,8 @@ export function TripHeader({ demo, configured }: Props) {
         <div className="demo-banner">
           <Info size={14} />
           <span>
-            <strong>예시로 둘러보는 중</strong> 가상의 맛집·카페와 개략도로 체험해보세요. 실제 장소
-            검색은 카카오 키 연결 후 사용할 수 있어요.
+            <strong>예시로 둘러보는 중</strong> 가상의 맛집·카페·술집과 개략도로 체험해보세요. 실제
+            장소 검색은 카카오 키 연결 후 사용할 수 있어요.
           </span>
         </div>
       ) : !configured ? (

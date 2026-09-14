@@ -36,9 +36,10 @@ export async function findNearbyPlaces(params: URLSearchParams) {
     .parse(Object.fromEntries(params));
   if (getTripConfig().demo) return nearbyDemo({ ...demoOrigin, lat, lng }, category, radius);
   const categories = category ? [category] : categorySchema.options;
-  return (
+  const places = (
     await Promise.all(categories.map((value) => nearbyPlaces({ lat, lng }, value, radius)))
   ).flat();
+  return Array.from(new Map(places.map((place) => [place.id, place])).values());
 }
 
 export async function buildTripPlan(input: unknown) {

@@ -1,11 +1,11 @@
 import './style.css';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Button } from '@/common/design-system/components/Button';
 import {
   Bus,
   ExternalLink,
   CircleCheck,
-  ChevronRight,
+  ChevronDown,
   TriangleAlert,
   Footprints,
   House,
@@ -24,7 +24,6 @@ interface Props {
   destination: Place | null;
   itinerary: Itinerary | null;
   onEdit: () => void;
-  initiallyExpanded?: boolean;
 }
 
 export function RouteSummary({
@@ -34,15 +33,14 @@ export function RouteSummary({
   destination,
   itinerary,
   onEdit,
-  initiallyExpanded = false,
 }: Props) {
-  const [disclosure, setDisclosure] = useState<{ itinerary: Itinerary; open: boolean } | null>(
+  const detailsId = useId();
+  const [disclosure, setDisclosure] = useState<{ itinerary: Itinerary; closed: number[] } | null>(
     null,
   );
+  const closedLegs = disclosure?.itinerary === itinerary ? (disclosure?.closed ?? []) : [];
   const segments = itinerary?.legs.flatMap((leg) => leg.segments) ?? [];
   const hasWarnings = itinerary?.legs.some((leg) => leg.warning) ?? false;
-  const detailsOpen =
-    disclosure?.itinerary === itinerary ? disclosure?.open : initiallyExpanded || hasWarnings;
   const totalSeconds = segments.reduce((sum, segment) => sum + segment.seconds, 0);
   const totalMeters = segments.reduce((sum, segment) => sum + segment.meters, 0);
   return (
@@ -82,86 +80,107 @@ export function RouteSummary({
             {formatDistance(totalMeters)}
             {itinerary.demo ? ' · 추정치' : ''}
           </p>
-          <Button
-            variant="ghost"
-            className="route-details-toggle h-auto justify-start rounded-none px-0 text-xs"
-            aria-expanded={!!detailsOpen}
-            aria-controls="route-details"
-            onClick={() => setDisclosure({ itinerary, open: !detailsOpen })}
-          >
-            <ChevronRight size={13} /> 구간별 이동 보기
-          </Button>
+          <h3 className="route-details-title">구간별 이동</h3>
           <div
-            id="route-details"
             className="route-details-scroll"
             role="region"
             aria-label="구간별 이동 안내"
             tabIndex={0}
-            hidden={!detailsOpen}
           >
             <p className="route-detail-hint">이동 안내를 누르면 표시점이 경로를 따라 움직여요.</p>
-            {itinerary.legs.map((leg, index) => (
-              <div className="leg" key={`${leg.from.id}-${leg.to.id}`}>
-                <Button
-                  variant="ghost"
-                  className="route-leg-trigger h-auto w-full justify-start whitespace-normal px-2 py-2 text-left text-xs"
-                  aria-label={`${index + 1}. ${leg.from.name} → ${leg.to.name} 지도에서 보기`}
-                  aria-pressed={
-                    activeRoute?.legIndex === index && activeRoute.segmentIndex === null
-                  }
-                  onClick={() => onFocusRoute(index, null)}
-                >
-                  <MapPin size={13} />
-                  {index + 1}. {leg.from.name} → {leg.to.name}
-                </Button>
-                {!itinerary.demo ? (
-                  <Button asChild variant="outline" size="sm" className="my-2 w-full text-xs">
-                    <a
-                      href={getKakaoRouteUrl(leg)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${index + 1}구간 카카오맵에서 보기: ${leg.from.name} → ${leg.to.name} · 새 창`}
-                    >
-                      {index + 1}구간 카카오맵에서 보기 <ExternalLink size={13} />
-                    </a>
-                  </Button>
-                ) : null}
-                {leg.warning ? <p className="warning-text">{leg.warning}</p> : null}
-                {leg.segments.length === 0 ? (
-                  leg.warning ? null : (
-                    <p>같은 위치 · 이동 없음</p>
-                  )
-                ) : (
-                  leg.segments.map((segment, segmentIndex) => (
+            {itinerary.legs.map((leg, index) => {
+              const isOpen = !closedLegs.includes(index);
+              const legDetailsId = `${detailsId}-${index}`;
+              return (
+                <div className="leg" key={`${leg.from.id}-${leg.to.id}`}>
+                  <div className="flex items-start gap-1">
                     <Button
                       variant="ghost"
-                      className="segment h-auto w-full justify-start whitespace-normal px-2 py-2 text-left text-xs"
-                      key={segmentIndex}
-                      aria-label={`${index + 1}-${segmentIndex + 1}. ${segment.instruction} 지도에서 보기`}
+                      className="route-leg-trigger h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-2 text-left text-xs"
+                      aria-label={`${index + 1}. ${leg.from.name} → ${leg.to.name} 지도에서 보기`}
                       aria-pressed={
-                        activeRoute?.legIndex === index && activeRoute.segmentIndex === segmentIndex
+                        activeRoute?.legIndex === index && activeRoute.segmentIndex === null
                       }
-                      onClick={() => onFocusRoute(index, segmentIndex)}
+                      onClick={() => onFocusRoute(index, null)}
                     >
-                      {segment.mode === 'walk' ? (
-                        <Footprints size={13} />
-                      ) : segment.mode === 'bus' ? (
-                        <Bus size={13} />
-                      ) : (
-                        <TrainFront size={13} />
-                      )}
-                      <span>
-                        {segment.instruction}
-                        <small>
-                          {formatMinutes(segment.seconds)}
-                          {segment.mode !== 'walk' ? ` · ${segment.stops ?? '?'}정거장` : ''}
-                        </small>
-                      </span>
+                      <MapPin size={13} />
+                      {index + 1}. {leg.from.name} → {leg.to.name}
                     </Button>
-                  ))
-                )}
-              </div>
-            ))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-xs"
+                      aria-label={`${index + 1}구간 ${isOpen ? '접기' : '펼치기'}`}
+                      aria-expanded={isOpen}
+                      aria-controls={legDetailsId}
+                      onClick={() =>
+                        setDisclosure({
+                          itinerary,
+                          closed: isOpen
+                            ? [...closedLegs, index]
+                            : closedLegs.filter((value) => value !== index),
+                        })
+                      }
+                    >
+                      {isOpen ? '접기' : '펼치기'}
+                      <ChevronDown
+                        className={isOpen ? 'size-3 rotate-180' : 'size-3'}
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  </div>
+                  {leg.warning ? <p className="warning-text">{leg.warning}</p> : null}
+                  <div id={legDetailsId} hidden={!isOpen}>
+                    {!itinerary.demo ? (
+                      <Button asChild variant="outline" size="sm" className="my-2 w-full text-xs">
+                        <a
+                          href={getKakaoRouteUrl(leg)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`${index + 1}구간 카카오맵에서 보기: ${leg.from.name} → ${leg.to.name} · 새 창`}
+                        >
+                          {index + 1}구간 카카오맵에서 보기 <ExternalLink size={13} />
+                        </a>
+                      </Button>
+                    ) : null}
+                    {leg.segments.length === 0 ? (
+                      leg.warning ? null : (
+                        <p>같은 위치 · 이동 없음</p>
+                      )
+                    ) : (
+                      leg.segments.map((segment, segmentIndex) => (
+                        <Button
+                          variant="ghost"
+                          className="segment h-auto w-full justify-start whitespace-normal px-2 py-2 text-left text-xs"
+                          key={segmentIndex}
+                          aria-label={`${index + 1}-${segmentIndex + 1}. ${segment.instruction} 지도에서 보기`}
+                          aria-pressed={
+                            activeRoute?.legIndex === index &&
+                            activeRoute.segmentIndex === segmentIndex
+                          }
+                          onClick={() => onFocusRoute(index, segmentIndex)}
+                        >
+                          {segment.mode === 'walk' ? (
+                            <Footprints size={13} />
+                          ) : segment.mode === 'bus' ? (
+                            <Bus size={13} />
+                          ) : (
+                            <TrainFront size={13} />
+                          )}
+                          <span>
+                            {segment.instruction}
+                            <small>
+                              {formatMinutes(segment.seconds)}
+                              {segment.mode !== 'walk' ? ` · ${segment.stops ?? '?'}정거장` : ''}
+                            </small>
+                          </span>
+                        </Button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : null}

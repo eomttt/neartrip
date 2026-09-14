@@ -42,6 +42,14 @@ describe('여행 API', () => {
     expect(places.length).toBeGreaterThan(0);
     expect(places.every((place) => place.category === 'cafe')).toBe(true);
   });
+  it('술 한잔 필터에서 술집만 반환한다', async () => {
+    const response = await fetch(
+      `${baseUrl}/api/nearby?lat=37.54458&lng=127.05598&category=bar&radius=500`,
+    );
+    const places = z.array(placeSchema).parse(await response.json());
+    expect(places.length).toBeGreaterThan(0);
+    expect(places.every((place) => place.category === 'bar')).toBe(true);
+  });
   it('출발점으로 돌아오고, 수동 방문 순서를 유지한다', async () => {
     const places = demoPlaces.slice(0, 3).toReversed();
     const response = await fetch(`${baseUrl}/api/plan`, {

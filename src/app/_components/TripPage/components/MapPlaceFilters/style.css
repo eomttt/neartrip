@@ -1,0 +1,66 @@
+@layer components {
+  .map-filter-action {
+    position: absolute;
+    z-index: 4;
+    top: 16px;
+    right: 16px;
+  }
+  .map-filter-action button {
+    min-height: 36px;
+    border-color: white;
+    background: var(--paper);
+    box-shadow: 0 3px 14px #263c3220;
+  }
+  .map-filter-action button span {
+    display: grid;
+    min-width: 20px;
+    height: 20px;
+    place-items: center;
+    padding-inline: 5px;
+    border-radius: 10px;
+    background: var(--secondary);
+    color: var(--primary);
+    font-size: 10px;
+  }
+  .map-panel:has(.map-filter-action) .map-top-label {
+    max-width: calc(100% - 130px);
+  }
+  .map-filter-sheet {
+    gap: 16px;
+    padding: 24px 20px max(18px, env(safe-area-inset-bottom));
+  }
+  .map-filter-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding-right: 24px;
+  }
+  .map-filter-heading > div:first-child {
+    display: grid;
+    gap: 7px;
+  }
+  .map-filter-heading [data-slot='dialog-description'] {
+    max-width: 380px;
+    line-height: 1.55;
+  }
+  .map-filter-sheet .place-filters {
+    margin: 0;
+  }
+  .map-filter-status {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted-foreground);
+    font-size: 11px;
+  }
+  @media (max-width: 520px) {
+    .map-filter-heading {
+      display: grid;
+    }
+    .map-filter-heading .radius-select {
+      position: absolute;
+      top: 18px;
+      right: 48px;
+    }
+  }
+}

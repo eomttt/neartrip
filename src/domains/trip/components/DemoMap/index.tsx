@@ -3,7 +3,21 @@ import type { RouteHighlight, RouteMapHandle } from '../../utils/route-highlight
 import { Button } from '@/common/design-system/components/Button';
 import { useImperativeHandle, useState, type Ref } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
-import type { Itinerary, Place } from '../../models/model-trip';
+import { categoryLabels, type Category, type Itinerary, type Place } from '../../models/model-trip';
+import { distanceMeters, formatDistance } from '../../utils/route-order';
+
+const categoryPinColors: Record<Category, string> = {
+  restaurant: '#bc725b',
+  cafe: '#b5824f',
+  attraction: '#668c73',
+  bar: '#87647f',
+};
+const categoryPinLabels: Record<Category, string> = {
+  restaurant: 'F',
+  cafe: 'C',
+  attraction: 'P',
+  bar: 'B',
+};
 
 interface Props {
   ref?: Ref<RouteMapHandle>;
@@ -28,6 +42,7 @@ export function DemoMap({
   onSelect,
 }: Props) {
   const [zoom, setZoom] = useState(1);
+  const [hoveredPlaceId, setHoveredPlaceId] = useState<string | null>(null);
   const [focus, setFocus] = useState<{
     target: RouteHighlight;
     itinerary: Itinerary | null;
@@ -197,29 +212,53 @@ export function DemoMap({
             const isOrigin = place.id === origin?.id;
             const isDestination = place.id === destination?.id;
             const index = selected.findIndex((item) => item.id === place.id);
+            const canSelect = !isOrigin && !isDestination && index < 0;
             const color =
               isOrigin || isDestination || index >= 0
                 ? '#245d46'
-                : place.category === 'cafe'
-                  ? '#b5824f'
-                  : place.category === 'restaurant'
-                    ? '#bc725b'
-                    : '#668c73';
+                : categoryPinColors[place.category];
             return (
-              <g key={place.id} transform={`translate(${p.x} ${p.y})`}>
+              <g
+                key={place.id}
+                className="demo-place-marker"
+                transform={`translate(${p.x} ${p.y})`}
+                onMouseEnter={() => setHoveredPlaceId(place.id)}
+                onMouseLeave={() => setHoveredPlaceId(null)}
+                onFocus={() => setHoveredPlaceId(place.id)}
+                onBlur={() => setHoveredPlaceId(null)}
+              >
+                {hoveredPlaceId === place.id ? (
+                  <g
+                    className="demo-place-preview"
+                    transform={`translate(0 ${p.y < 190 ? 50 : -142})`}
+                    role="tooltip"
+                    aria-label={`${place.name} 장소 정보`}
+                  >
+                    <rect x="-124" width="248" height="112" rx="12" />
+                    <text x="-108" y="24" className="demo-place-preview-category">
+                      {categoryLabels[place.category]}
+                    </text>
+                    <text x="-108" y="47" className="demo-place-preview-name">
+                      {place.name}
+                    </text>
+                    <text x="-108" y="70" className="demo-place-preview-address">
+                      {place.address}
+                    </text>
+                    <text x="-108" y="94" className="demo-place-preview-meta">
+                      직선 {origin ? formatDistance(distanceMeters(origin, place)) : '거리 확인 중'}
+                    </text>
+                  </g>
+                ) : null}
                 <g
                   role="button"
-                  tabIndex={isOrigin || isDestination ? -1 : 0}
-                  aria-label={`${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : ' 지도에서 선택'}`}
+                  tabIndex={canSelect ? 0 : -1}
+                  aria-disabled={!canSelect}
+                  aria-label={`${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : index >= 0 ? ' 선택됨' : ' 지도에서 선택'}`}
                   onClick={() => {
-                    if (!isOrigin && !isDestination) onSelect(place);
+                    if (canSelect) onSelect(place);
                   }}
                   onKeyDown={(event) => {
-                    if (
-                      !isOrigin &&
-                      !isDestination &&
-                      (event.key === 'Enter' || event.key === ' ')
-                    ) {
+                    if (canSelect && (event.key === 'Enter' || event.key === ' ')) {
                       event.preventDefault();
                       onSelect(place);
                     }
@@ -243,11 +282,7 @@ export function DemoMap({
                         ? '도착'
                         : index >= 0
                           ? index + 1
-                          : place.category === 'cafe'
-                            ? 'C'
-                            : place.category === 'restaurant'
-                              ? 'F'
-                              : 'P'}
+                          : categoryPinLabels[place.category]}
                   </text>
                 </g>
                 <text

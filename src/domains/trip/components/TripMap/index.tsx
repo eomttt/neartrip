@@ -45,6 +45,9 @@ export function TripMap({
         <span>
           <i className="legend-place" />갈 만한 곳
         </span>
+        <span>
+          <i className="legend-bar" />술 한잔
+        </span>
       </div>
       {!itinerary ? (
         <div className="map-note">

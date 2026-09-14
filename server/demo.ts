@@ -92,6 +92,16 @@ export const demoPlaces: Place[] = [
     address: '성수동 예시 골목 8',
     url: '',
   },
+  {
+    id: 'demo-9',
+    name: '저녁의 잔',
+    category: 'bar',
+    lat: 37.5426,
+    lng: 127.0581,
+    description: '여행의 마지막을 가볍게 나누는 동네 술집',
+    address: '성수동 예시 골목 9',
+    url: '',
+  },
 ];
 
 export function nearbyDemo(origin: Place, category: Category | undefined, radius: number): Place[] {

@@ -5,6 +5,7 @@ import { XIcon } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 
 import { Button } from '@/common/design-system/components/Button';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -48,6 +49,7 @@ function DialogContent({
   showCloseButton?: boolean;
   placement?: 'center' | 'bottom';
 }) {
+  const { t } = useI18n();
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -69,7 +71,7 @@ function DialogContent({
             className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
-            <span className="sr-only">닫기</span>
+            <span className="sr-only">{t('dialog.close')}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
@@ -95,6 +97,7 @@ function DialogFooter({
 }: React.ComponentProps<'div'> & {
   showCloseButton?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div
       data-slot="dialog-footer"
@@ -104,7 +107,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">닫기</Button>
+          <Button variant="outline">{t('dialog.close')}</Button>
         </DialogPrimitive.Close>
       )}
     </div>

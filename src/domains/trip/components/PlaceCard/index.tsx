@@ -13,9 +13,12 @@ import {
   UtensilsCrossed,
   Wine,
 } from 'lucide-react';
-import { categoryLabels, type Category, type Place } from '../../models/model-trip';
+import type { Category, Place } from '../../models/model-trip';
 import { getKakaoPlaceDetailUrl } from '../../utils/place-detail';
 import { distanceMeters, formatDistance } from '../../utils/route-order';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { categoryMessageKeys } from '../../i18n/trip-message-keys';
+import { localizeTripText } from '../../i18n/localize-trip-text';
 
 interface Props {
   crowding?: Crowding;
@@ -34,6 +37,7 @@ const categoryIcons: Record<Category, typeof Coffee> = {
 };
 
 export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, crowding }: Props) {
+  const { locale, t } = useI18n();
   const detailUrl = getKakaoPlaceDetailUrl(place.url);
   const Icon = categoryIcons[place.category];
   return (
@@ -44,13 +48,15 @@ export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, cro
       <div className="place-copy">
         <div className="place-title">
           <h3>{place.name}</h3>
-          <span className="category-label">{categoryLabels[place.category]}</span>
+          <span className="category-label">{t(categoryMessageKeys[place.category])}</span>
         </div>
         <p className="place-address">{place.address}</p>
         <div className="place-meta">
           <span className="distance">
             <Footprints className="size-3" aria-hidden="true" />
-            직선 {formatDistance(distanceMeters(origin, place))}
+            {t('place.straightDistance', {
+              distance: formatDistance(distanceMeters(origin, place)),
+            })}
           </span>
           {detailUrl ? (
             <a
@@ -58,35 +64,37 @@ export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, cro
               href={detailUrl}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`${place.name} 카카오맵 후기·상세 (새 창)`}
+              aria-label={t('place.detailLabel', { name: place.name })}
             >
-              후기·상세 <ExternalLink className="size-3" aria-hidden="true" />
+              {t('place.detail')} <ExternalLink className="size-3" aria-hidden="true" />
             </a>
           ) : null}
         </div>
         {place.tourism?.kind === 'festival' && place.description ? (
-          <p className="place-description">{place.description}</p>
+          <p className="place-description">{localizeTripText(locale, place.description)}</p>
         ) : null}
         {place.tourism ? (
           <div className="tourism-details">
             {place.tourism.kind === 'pet' ? (
               <span className="pet-badge">
                 <PawPrint className="size-3" aria-hidden="true" />
-                반려견 동반
+                {t('place.pet')}
               </span>
             ) : null}
             {place.tourism.period ? (
-              <p>개최 기간 {place.tourism.period.replace(/(\d{4})(\d{2})(\d{2})/g, '$1.$2.$3')}</p>
+              <p>
+                {t('place.period', {
+                  period: place.tourism.period.replace(/(\d{4})(\d{2})(\d{2})/g, '$1.$2.$3'),
+                })}
+              </p>
             ) : null}
             {place.tourism.conditions ? (
               <details>
                 <summary>
-                  {place.tourism.kind === 'pet' ? '반려견 동반 조건' : '운영 시간 보기'}
+                  {place.tourism.kind === 'pet' ? t('place.petConditions') : t('place.hours')}
                 </summary>
                 <p>{place.tourism.conditions}</p>
-                {place.tourism.kind === 'pet' ? (
-                  <p>한국관광공사 TourAPI · 입장 조건은 방문 전 확인해주세요.</p>
-                ) : null}
+                {place.tourism.kind === 'pet' ? <p>{t('place.petSource')}</p> : null}
               </details>
             ) : null}
           </div>
@@ -97,7 +105,7 @@ export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, cro
         variant={isSelected ? 'default' : 'outline'}
         size="icon-sm"
         className="add-place size-10 rounded-full"
-        aria-label={`${place.name} ${isSelected ? '빼기' : '담기'}`}
+        aria-label={t(isSelected ? 'place.remove' : 'place.add', { name: place.name })}
         aria-pressed={isSelected}
         disabled={isDisabled && !isSelected}
         onClick={() => onSelect(place)}

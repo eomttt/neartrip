@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { Itinerary, Place } from '../models/model-trip';
 import { useMutation } from '@tanstack/react-query';
 import { postTripPlanMutations } from '../queries/postTripPlanMutations';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { localizeTripText } from '../i18n/localize-trip-text';
 
 export function useTripPlanner(initialOrigin: Place | null) {
+  const { locale, t } = useI18n();
   const [origin, setOrigin] = useState(initialOrigin);
   const [destination, setDestination] = useState<Place | null>(null);
   const [selected, setSelected] = useState<Place[]>([]);
@@ -32,7 +35,7 @@ export function useTripPlanner(initialOrigin: Place | null) {
   function togglePlace(place: Place) {
     if (place.id === origin?.id || place.id === destination?.id) return;
     if (!selected.some((item) => item.id === place.id) && selected.length >= 5) {
-      setError('한 번에 5곳까지 담을 수 있어요.');
+      setError(t('planner.maxPlaces'));
       return;
     }
     clearRoute();
@@ -77,7 +80,7 @@ export function useTripPlanner(initialOrigin: Place | null) {
     } catch (cause) {
       if (!controller.signal.aborted)
         setError(
-          cause instanceof Error ? cause.message : '동선을 만들지 못했어요. 다시 시도해주세요.',
+          cause instanceof Error ? localizeTripText(locale, cause.message) : t('planner.failed'),
         );
     }
   }

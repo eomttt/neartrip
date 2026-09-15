@@ -20,6 +20,8 @@ import {
 import { categorySchema, type Category, type Place } from '../../models/model-trip';
 import { PlaceCard } from '../PlaceCard';
 import { PlaceFilters, PlaceRadiusSelect } from '../PlaceFilters';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { localizeTripText } from '../../i18n/localize-trip-text';
 
 interface FilterSelection {
   categories: Category[];
@@ -81,6 +83,7 @@ export function NearbyPlaces({
   onRetry,
   onSelect,
 }: Props) {
+  const { locale, t } = useI18n();
   const [draftFilters, setDraftFilters] = useState<FilterSelection>(() => ({
     categories: [...selectedCategories],
     radius,
@@ -89,7 +92,10 @@ export function NearbyPlaces({
     festivalOnly,
   }));
   const week = koreaWeekRange();
-  const formatDay = (date: string) => `${Number(date.slice(4, 6))}.${Number(date.slice(6, 8))}`;
+  const formatDay = (date: string) =>
+    locale === 'ko'
+      ? `${Number(date.slice(4, 6))}.${Number(date.slice(6, 8))}`
+      : `${Number(date.slice(4, 6))}/${Number(date.slice(6, 8))}`;
   const selectedIds = new Set(selected.map((place) => place.id));
   const resultCount = places.length > 0 ? places.length : recommendations.length;
   const activeFilterCount =
@@ -135,7 +141,7 @@ export function NearbyPlaces({
   return (
     <section className="nearby-section" aria-labelledby="nearby-title">
       <div className="section-heading">
-        <h2 id="nearby-title">오늘 들러볼 곳</h2>
+        <h2 id="nearby-title">{t('nearby.title')}</h2>
         <Dialog onOpenChange={handleFilterSheetOpenChange}>
           <DialogTrigger asChild>
             <Button
@@ -143,23 +149,23 @@ export function NearbyPlaces({
               size="sm"
               className="nearby-filter-trigger"
               aria-label={
-                activeFilterCount > 0 ? `장소 필터 ${activeFilterCount}개 적용` : '장소 필터'
+                activeFilterCount > 0
+                  ? t('filters.applied', { count: activeFilterCount })
+                  : t('filters.label')
               }
             >
               <SlidersHorizontal size={15} />
-              필터
+              {t('filters.button')}
               {activeFilterCount > 0 ? <span aria-hidden="true">{activeFilterCount}</span> : null}
             </Button>
           </DialogTrigger>
           <DialogContent placement="bottom" className="nearby-filter-sheet">
             <div className="nearby-filter-heading">
-              <DialogTitle>장소 필터</DialogTitle>
-              <DialogDescription>
-                장소 보기를 누르면 선택한 조건이 목록에 반영돼요.
-              </DialogDescription>
+              <DialogTitle>{t('filters.label')}</DialogTitle>
+              <DialogDescription>{t('filters.description')}</DialogDescription>
             </div>
             <div className="nearby-filter-radius">
-              <span>검색 반경</span>
+              <span>{t('filters.radius')}</span>
               <PlaceRadiusSelect
                 id="search-radius"
                 radius={draftFilters.radius}
@@ -210,7 +216,7 @@ export function NearbyPlaces({
             <DialogFooter>
               <DialogClose asChild>
                 <Button className="w-full" onClick={handleApplyFilters}>
-                  장소 보기
+                  {t('filters.showPlaces')}
                 </Button>
               </DialogClose>
             </DialogFooter>
@@ -220,37 +226,40 @@ export function NearbyPlaces({
       <div className="results-caption">
         <span>
           {demo
-            ? '예시 장소'
+            ? t('nearby.demoPlaces')
             : festivalOnly && places.length === 0 && recommendations.length > 0
-              ? '가까운 행사 추천'
+              ? t('nearby.recommendedFestivals')
               : festivalOnly
-                ? '이번 주 행사'
-                : '가까운 장소'}{' '}
-          <strong>{resultCount}</strong>곳
+                ? t('nearby.weeklyFestivals')
+                : t('nearby.nearPlaces')}{' '}
+          <strong>{t('nearby.count', { count: resultCount })}</strong>
         </span>
-        <span>직선거리순</span>
+        <span>{t('nearby.distanceOrder')}</span>
       </div>
       <div
         className="place-list"
         role="region"
-        aria-label="주변 장소 목록"
+        aria-label={t('nearby.region')}
         tabIndex={0}
         aria-busy={isFetching}
       >
         {festivalOnly ? (
           <p className="tourism-source">
-            {demo ? '예시 데이터' : '한국관광공사 TourAPI'} · {formatDay(week.start)} ~{' '}
-            {formatDay(week.end)}(일) · 한국 시간 기준
+            {demo ? t('nearby.sampleData') : t('nearby.tourApi')} ·{' '}
+            {t('nearby.weekRange', {
+              start: formatDay(week.start),
+              end: formatDay(week.end),
+            })}
           </p>
         ) : null}
         {isFetching ? (
           <div className="list-message" role="status">
-            <span className="spinner" /> 주변 장소를 찾고 있어요.
+            <span className="spinner" /> {t('nearby.loading')}
           </div>
         ) : error ? (
           <div className="list-message" role="alert">
-            <p>{error.message}</p>
-            <Button onClick={() => onRetry()}>다시 찾기</Button>
+            <p>{localizeTripText(locale, error.message)}</p>
+            <Button onClick={() => onRetry()}>{t('nearby.retry')}</Button>
           </div>
         ) : origin ? (
           places.length > 0 ? (
@@ -268,8 +277,8 @@ export function NearbyPlaces({
           ) : recommendations.length > 0 ? (
             <div className="festival-recommendations">
               <div className="recommendation-heading">
-                <strong>이번 주에 열리는 가까운 행사</strong>
-                <span>선택한 반경에 결과가 없어 가까운 순서로 추천해요.</span>
+                <strong>{t('nearby.recommendationTitle')}</strong>
+                <span>{t('nearby.recommendationDescription')}</span>
               </div>
               {recommendations.map((place) => (
                 <PlaceCard
@@ -285,23 +294,17 @@ export function NearbyPlaces({
             </div>
           ) : (
             <div className="list-message">
-              {hasMore
-                ? '아직 조건에 맞는 장소를 찾지 못했어요.'
-                : '이 반경에서 조건에 맞는 장소를 찾지 못했어요.'}
+              {hasMore ? t('nearby.noMatchMore') : t('nearby.noMatch')}
               <br />
-              반경이나 종류를 바꿔보세요.
+              {t('nearby.changeFilter')}
             </div>
           )
         ) : (
-          <div className="list-message">
-            시작점을 정하면
-            <br />
-            주변의 좋은 곳들이 나타나요.
-          </div>
+          <div className="list-message">{t('nearby.chooseOrigin')}</div>
         )}
         {loadMoreError ? (
           <p role="alert" className="tourism-source">
-            {loadMoreError.message}
+            {localizeTripText(locale, loadMoreError.message)}
           </p>
         ) : null}
         {hasMore && !isFetching ? (
@@ -312,12 +315,12 @@ export function NearbyPlaces({
             onClick={onLoadMore}
           >
             {isLoadingMore
-              ? '더 찾는 중…'
+              ? t('nearby.loadingMore')
               : loadMoreError
-                ? '더 찾기 재시도'
+                ? t('nearby.retryMore')
                 : festivalOnly
-                  ? '다른 행사 더 찾기'
-                  : '반려견 동반 장소 더 찾기'}
+                  ? t('nearby.moreFestival')
+                  : t('nearby.morePet')}
           </Button>
         ) : null}
       </div>

@@ -4,9 +4,13 @@ import { Button } from '@/common/design-system/components/Button';
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
 import { loadKakaoMap } from '../../../../common/maps/kakao-loader';
-import { categoryLabels, type Category, type Itinerary, type Place } from '../../models/model-trip';
+import type { Category, Itinerary, Place } from '../../models/model-trip';
 import { getKakaoPlaceDetailUrl } from '../../utils/place-detail';
 import { distanceMeters, formatDistance } from '../../utils/route-order';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
+import type { MessageKey, MessageValues } from '@/common/i18n/messages';
+import { categoryMessageKeys } from '../../i18n/trip-message-keys';
+import { localizeTripText } from '../../i18n/localize-trip-text';
 
 const categoryPinLabels: Record<Category, string> = {
   restaurant: 'F',
@@ -34,16 +38,21 @@ function fitMapBounds(
   );
 }
 
-function createMapPlacePreview(place: Place, origin: Place | null, id: string): HTMLElement {
+function createMapPlacePreview(
+  place: Place,
+  origin: Place | null,
+  id: string,
+  t: (key: MessageKey, values?: MessageValues) => string,
+): HTMLElement {
   const preview = document.createElement('article');
   preview.id = id;
   preview.className = 'map-place-preview';
   preview.setAttribute('role', 'tooltip');
-  preview.setAttribute('aria-label', `${place.name} 장소 정보`);
+  preview.setAttribute('aria-label', t('map.preview', { name: place.name }));
 
   const category = document.createElement('span');
   category.className = 'map-place-preview-category';
-  category.textContent = categoryLabels[place.category];
+  category.textContent = t(categoryMessageKeys[place.category]);
   const name = document.createElement('strong');
   name.textContent = place.name;
   const address = document.createElement('p');
@@ -53,7 +62,9 @@ function createMapPlacePreview(place: Place, origin: Place | null, id: string): 
   meta.className = 'map-place-preview-meta';
   if (origin) {
     const distance = document.createElement('span');
-    distance.textContent = `직선 ${formatDistance(distanceMeters(origin, place))}`;
+    distance.textContent = t('place.straightDistance', {
+      distance: formatDistance(distanceMeters(origin, place)),
+    });
     meta.append(distance);
   }
   const detailUrl = getKakaoPlaceDetailUrl(place.url);
@@ -62,8 +73,8 @@ function createMapPlacePreview(place: Place, origin: Place | null, id: string): 
     detail.href = detailUrl;
     detail.target = '_blank';
     detail.rel = 'noopener noreferrer';
-    detail.textContent = '후기·상세 ↗';
-    detail.setAttribute('aria-label', `${place.name} 카카오맵 후기·상세 (새 창)`);
+    detail.textContent = `${t('place.detail')} ↗`;
+    detail.setAttribute('aria-label', t('place.detailLabel', { name: place.name }));
     meta.append(detail);
   }
   preview.append(category, name, address, meta);
@@ -91,6 +102,7 @@ export function KakaoMap({
   onShowEntireRoute,
   onSelect,
 }: Props) {
+  const { locale, t } = useI18n();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<kakao.maps.Map | null>(null);
   const bounds = useRef<kakao.maps.LatLngBounds | null>(null);
@@ -139,12 +151,12 @@ export function KakaoMap({
         const marker = document.createElement('span');
         marker.className = 'route-focus-marker';
         marker.setAttribute('role', 'status');
-        marker.setAttribute('aria-label', `${highlight.label} 이동 미리보기`);
+        marker.setAttribute('aria-label', t('map.previewMoving', { label: highlight.label }));
         const dot = document.createElement('span');
         dot.className = 'route-playback-dot';
         const label = document.createElement('span');
         label.className = 'route-playback-label';
-        label.textContent = '이동 미리보기';
+        label.textContent = t('map.moving');
         marker.append(dot, label);
         const overlay = new kakao.maps.CustomOverlay({
           map: currentMap,
@@ -166,14 +178,14 @@ export function KakaoMap({
         };
       },
     }),
-    [ready],
+    [ready, t],
   );
 
   useEffect(() => {
     let active = true;
     const key: unknown = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
     if (typeof key !== 'string' || !key) {
-      setError('카카오 JavaScript 키를 설정하면 이곳에 지도가 표시돼요.');
+      setError(t('map.keyMissing'));
       return;
     }
     loadKakaoMap(key)
@@ -186,7 +198,10 @@ export function KakaoMap({
         setReady(true);
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : '지도를 불러오지 못했어요.');
+        if (active)
+          setError(
+            cause instanceof Error ? localizeTripText(locale, cause.message) : t('map.loadFailed'),
+          );
       });
     return () => {
       active = false;
@@ -240,16 +255,20 @@ export function KakaoMap({
       pin.className = `map-pin pin-${place.category} ${isOrigin ? 'pin-origin' : ''} ${index >= 0 ? 'pin-selected' : ''} ${isDestination ? 'pin-destination' : ''}`;
       pin.textContent = isOrigin
         ? isDestination
-          ? '왕복'
-          : '출발'
+          ? t('map.roundTrip')
+          : t('map.start')
         : isDestination
-          ? '도착'
+          ? t('map.end')
           : index >= 0
             ? String(index + 1)
             : categoryPinLabels[place.category];
       pin.setAttribute(
         'aria-label',
-        `${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : index >= 0 ? ' 지도에서 빼기' : ' 지도에서 선택'}`,
+        isOrigin
+          ? t(isDestination ? 'map.originDestination' : 'map.origin', { name: place.name })
+          : isDestination
+            ? t('map.destination', { name: place.name })
+            : t(index >= 0 ? 'map.remove' : 'map.select', { name: place.name }),
       );
       pin.setAttribute('aria-disabled', String(!canToggle));
       if (canToggle) pin.setAttribute('aria-pressed', String(index >= 0));
@@ -258,7 +277,7 @@ export function KakaoMap({
       markerIndex += 1;
       pin.setAttribute('aria-describedby', previewId);
       if (canToggle) pin.onclick = () => handlePlaceSelect(place);
-      marker.append(pin, createMapPlacePreview(place, origin, previewId));
+      marker.append(pin, createMapPlacePreview(place, origin, previewId, t));
       const position = new kakao.maps.LatLng(place.lat, place.lng);
       if (!itinerary || isOrigin || isDestination || index >= 0) viewBounds.extend(position);
       const zIndex = isOrigin || isDestination ? 5 : index >= 0 ? 4 : 3;
@@ -307,27 +326,27 @@ export function KakaoMap({
       overlays.forEach((overlay) => overlay.setMap(null));
       lines.forEach((line) => line.setMap(null));
     };
-  }, [ready, origin, destination, places, selected, itinerary]);
+  }, [ready, origin, destination, places, selected, itinerary, t]);
 
   return (
     <>
-      <div ref={container} className="kakao-canvas" aria-label="카카오 지도" />
+      <div ref={container} className="kakao-canvas" aria-label={t('map.kakaoLabel')} />
       {error ? (
         <div className="map-message" role="alert">
-          <strong>지도 연결을 확인해주세요</strong>
+          <strong>{t('map.checkConnection')}</strong>
           <p>{error}</p>
-          <Button onClick={() => window.location.reload()}>다시 불러오기</Button>
+          <Button onClick={() => window.location.reload()}>{t('map.reload')}</Button>
         </div>
       ) : !ready ? (
         <div className="map-message" role="status">
-          <span className="spinner" /> 지도를 불러오는 중이에요.
+          <span className="spinner" /> {t('map.loading')}
         </div>
       ) : null}
       <div className="map-controls">
         <Button
           variant="outline"
           size="icon"
-          aria-label="지도 확대"
+          aria-label={t('map.zoomIn')}
           onClick={() => {
             const current = map.current;
             if (current) current.setLevel(current.getLevel() - 1);
@@ -338,7 +357,7 @@ export function KakaoMap({
         <Button
           variant="outline"
           size="icon"
-          aria-label="지도 축소"
+          aria-label={t('map.zoomOut')}
           onClick={() => {
             const current = map.current;
             if (current) current.setLevel(current.getLevel() + 1);
@@ -350,7 +369,7 @@ export function KakaoMap({
           variant="outline"
           size="sm"
           className="map-overview-action h-9 w-auto px-3 text-xs"
-          aria-label="전체 동선 보기"
+          aria-label={t('map.fullRoute')}
           onClick={() => {
             clearHighlight.current();
             activeBounds.current = null;
@@ -360,7 +379,7 @@ export function KakaoMap({
           }}
         >
           <Crosshair size={18} />
-          <span>{itinerary ? '전체 동선' : '전체 보기'}</span>
+          <span>{itinerary ? t('map.fullRouteText') : t('map.fullText')}</span>
         </Button>
       </div>
     </>

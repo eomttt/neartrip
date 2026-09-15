@@ -13,6 +13,7 @@ import {
 import { ArrowDown, ArrowUp, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
 import type { Place } from '../../models/model-trip';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 
 interface Props {
   places: Place[];
@@ -22,20 +23,21 @@ interface Props {
 }
 
 export function SelectedPlaces({ places, onMove, onRemove, onReset }: Props) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   if (places.length === 0) return null;
   return (
-    <section className="selected-places" aria-label="담은 장소">
+    <section className="selected-places" aria-label={t('selected.region')}>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button variant="secondary" className="h-10 w-full justify-between text-xs">
-            담은 장소 {places.length} / 5 · 방문 순서 변경
+            {t('selected.trigger', { count: places.length })}
           </Button>
         </DialogTrigger>
         <DialogContent className="selected-places-dialog">
           <DialogHeader>
-            <DialogTitle>방문 순서 변경</DialogTitle>
-            <DialogDescription>위아래로 옮겨 방문할 순서를 정해주세요.</DialogDescription>
+            <DialogTitle>{t('selected.title')}</DialogTitle>
+            <DialogDescription>{t('selected.description')}</DialogDescription>
           </DialogHeader>
           <div className="flex justify-end">
             <Button
@@ -46,7 +48,7 @@ export function SelectedPlaces({ places, onMove, onRemove, onReset }: Props) {
                 onReset();
               }}
             >
-              <RotateCcw size={13} /> 비우기
+              <RotateCcw size={13} /> {t('selected.clear')}
             </Button>
           </div>
           <ol className="route-list">
@@ -60,7 +62,7 @@ export function SelectedPlaces({ places, onMove, onRemove, onReset }: Props) {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`${place.name} 앞으로`}
+                    aria-label={t('selected.moveUp', { name: place.name })}
                     disabled={index === 0}
                     onClick={() => onMove(index, -1)}
                   >
@@ -69,7 +71,7 @@ export function SelectedPlaces({ places, onMove, onRemove, onReset }: Props) {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`${place.name} 뒤로`}
+                    aria-label={t('selected.moveDown', { name: place.name })}
                     disabled={index === places.length - 1}
                     onClick={() => onMove(index, 1)}
                   >
@@ -78,7 +80,7 @@ export function SelectedPlaces({ places, onMove, onRemove, onReset }: Props) {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    aria-label={`${place.name} 일정에서 빼기`}
+                    aria-label={t('selected.remove', { name: place.name })}
                     onClick={() => {
                       if (places.length === 1) setOpen(false);
                       onRemove(place);
@@ -92,7 +94,7 @@ export function SelectedPlaces({ places, onMove, onRemove, onReset }: Props) {
           </ol>
           <DialogFooter>
             <DialogClose asChild>
-              <Button>순서 선택 완료</Button>
+              <Button>{t('selected.done')}</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>

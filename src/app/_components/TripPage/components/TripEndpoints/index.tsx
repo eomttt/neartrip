@@ -13,6 +13,7 @@ import {
 import { OriginPicker } from '@/domains/trip/components/OriginPicker';
 import { DestinationPicker } from '@/domains/trip/components/DestinationPicker';
 import type { Place } from '@/domains/trip/models/model-trip';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 
 interface Props {
   origin: Place | null;
@@ -29,6 +30,7 @@ export function TripEndpoints({
   onOriginChange,
   onDestinationChange,
 }: Props) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const hadOrigin = useRef(!!origin);
@@ -42,8 +44,8 @@ export function TripEndpoints({
     return (
       <>
         <div className="discover-intro">
-          <h1>숙소 근처, 오늘 어디 가지?</h1>
-          <p>먼저 묵는 숙소나 출발할 장소를 골라주세요.</p>
+          <h1>{t('endpoints.introTitle')}</h1>
+          <p>{t('endpoints.introDescription')}</p>
         </div>
         <OriginPicker value={null} demo={demo} onChange={onOriginChange} />
       </>
@@ -57,15 +59,19 @@ export function TripEndpoints({
           ref={trigger}
           variant="outline"
           className="h-auto w-full justify-start gap-3 px-3 py-3 text-left"
-          aria-label="출발·도착점 수정"
+          aria-label={t('endpoints.edit')}
         >
           <MapPin className="shrink-0 text-primary" size={18} />
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold">{origin.name} 출발</span>
+            <span className="block truncate text-sm font-semibold">
+              {t('endpoints.origin', { name: origin.name })}
+            </span>
             <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
               <ArrowRight className="shrink-0" size={12} />
               <span className="truncate">
-                {destination ? `${destination.name} 도착` : '출발점으로 돌아오기'}
+                {destination
+                  ? t('endpoints.destination', { name: destination.name })
+                  : t('endpoints.return')}
               </span>
             </span>
           </span>
@@ -77,17 +83,15 @@ export function TripEndpoints({
         className="overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       >
         <DialogHeader>
-          <DialogTitle>출발·도착점 수정</DialogTitle>
-          <DialogDescription>
-            도착점을 정하지 않으면 출발점으로 돌아와요. 출발점을 바꾸면 담은 장소가 비워져요.
-          </DialogDescription>
+          <DialogTitle>{t('endpoints.edit')}</DialogTitle>
+          <DialogDescription>{t('endpoints.editDescription')}</DialogDescription>
         </DialogHeader>
         <div>
           <OriginPicker value={origin} demo={demo} onChange={onOriginChange} />
           <DestinationPicker value={destination} onChange={onDestinationChange} />
         </div>
         <DialogClose asChild>
-          <Button className="w-full shrink-0">장소 둘러보기</Button>
+          <Button className="w-full shrink-0">{t('endpoints.browse')}</Button>
         </DialogClose>
       </DialogContent>
     </Dialog>

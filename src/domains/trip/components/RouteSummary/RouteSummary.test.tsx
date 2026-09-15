@@ -102,7 +102,7 @@ it('구간을 각각 접고 펼쳐도 목록과 다른 구간 및 지도 선택�
   expect(screen.getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
 });
 
-it('각 구간의 방향과 이동수단에 맞는 카카오맵 링크를 별도로 제공한다', async () => {
+it('각 구간의 방향과 이동수단에 맞는 카카오맵과 Google Maps 링크를 제공한다', async () => {
   const user = userEvent.setup();
   const destination = { ...demoOrigin, id: 'destination', name: '카페 / 쉼, #1', lat: 37.55 };
   const outward = createDemoLeg(demoOrigin, destination);
@@ -137,6 +137,9 @@ it('각 구간의 방향과 이동수단에 맞는 카카오맵 링크를 별도
   );
   const outwardLink = screen.getByRole('link', { name: /^1구간 카카오맵/ });
   const returningLink = screen.getByRole('link', { name: /^2구간 카카오맵/ });
+  const outwardGoogleLink = screen.getByRole('link', { name: /^1구간 Google Maps/ });
+  const returningGoogleLink = screen.getByRole('link', { name: /^2구간 Google Maps/ });
+  const warningGoogleLink = screen.getByRole('link', { name: /^3구간 Google Maps/ });
   expect(decodeURIComponent(outwardLink.getAttribute('href') ?? '')).toBe(
     `https://map.kakao.com/link/by/walk/${demoOrigin.name},${demoOrigin.lat},${demoOrigin.lng}/${destination.name},${destination.lat},${destination.lng}`,
   );
@@ -148,8 +151,26 @@ it('각 구간의 방향과 이동수단에 맞는 카카오맵 링크를 별도
   expect(screen.getByRole('link', { name: /^3구간 카카오맵/ }).getAttribute('href')).toContain(
     '/link/from/',
   );
+  const outwardGoogleUrl = new URL(outwardGoogleLink.getAttribute('href') ?? '');
+  expect(outwardGoogleUrl.origin + outwardGoogleUrl.pathname).toBe(
+    'https://www.google.com/maps/dir/',
+  );
+  expect(outwardGoogleUrl.searchParams.get('api')).toBe('1');
+  expect(outwardGoogleUrl.searchParams.get('origin')).toBe(`${demoOrigin.lat},${demoOrigin.lng}`);
+  expect(outwardGoogleUrl.searchParams.get('destination')).toBe(
+    `${destination.lat},${destination.lng}`,
+  );
+  expect(outwardGoogleUrl.searchParams.get('travelmode')).toBe('walking');
+  expect(
+    new URL(returningGoogleLink.getAttribute('href') ?? '').searchParams.get('travelmode'),
+  ).toBe('transit');
+  expect(new URL(warningGoogleLink.getAttribute('href') ?? '').searchParams.has('travelmode')).toBe(
+    false,
+  );
   expect(outwardLink.getAttribute('target')).toBe('_blank');
   expect(outwardLink.getAttribute('rel')).toBe('noopener noreferrer');
+  expect(outwardGoogleLink.getAttribute('target')).toBe('_blank');
+  expect(outwardGoogleLink.getAttribute('rel')).toBe('noopener noreferrer');
   await user.click(outwardLink);
   expect(onFocusRoute).not.toHaveBeenCalled();
   expect(screen.getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
@@ -173,4 +194,5 @@ it('가상 장소의 예시 동선에는 외부 길찾기 링크를 표시하지
     ),
   );
   expect(screen.queryByRole('link', { name: /카카오맵에서 보기/ })).toBeNull();
+  expect(screen.queryByRole('link', { name: /Google Maps에서 보기/ })).toBeNull();
 });

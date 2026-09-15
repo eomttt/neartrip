@@ -4,6 +4,7 @@ import { Button } from '@/common/design-system/components/Button';
 import type { Place } from '@/domains/trip/models/model-trip';
 import { RouteSummary } from '@/domains/trip/components/RouteSummary';
 import './style.css';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 
 type Props = ComponentProps<typeof RouteSummary> & {
   selected: Place[];
@@ -25,6 +26,7 @@ export function RouteSheet({
   onOpenChange,
   onRebuild,
 }: Props) {
+  const { t } = useI18n();
   const detailsId = useId();
   const toggleButton = useRef<HTMLButtonElement>(null);
   const canRebuild = selected.length > 0 || !!destination;
@@ -58,7 +60,7 @@ export function RouteSheet({
             onClick={() => onOpenChange(!isOpen)}
           >
             <ListOrdered size={17} />
-            <span>{isOpen ? '지도 넓게 보기' : '이동 안내 보기'}</span>
+            <span>{isOpen ? t('routeSheet.expandMap') : t('routeSheet.showDirections')}</span>
             <ChevronDown size={17} className={isOpen ? '' : 'rotate-180'} aria-hidden="true" />
           </Button>
           <div
@@ -84,10 +86,10 @@ export function RouteSheet({
         <div className="route-sheet-pending">
           {isOpen ? (
             <>
-              <strong>장소가 바뀌었어요</strong>
-              <p>새 동선을 만들면 지금 담은 장소가 반영돼요.</p>
+              <strong>{t('routeSheet.changed')}</strong>
+              <p>{t('routeSheet.changedDescription')}</p>
               {selected.length > 0 ? (
-                <ol aria-label="현재 담은 장소">
+                <ol aria-label={t('routeSheet.currentPlaces')}>
                   {selected.map((place, index) => (
                     <li key={place.id}>
                       <span>{index + 1}</span>
@@ -112,9 +114,9 @@ export function RouteSheet({
             )}
             {canRebuild
               ? isPlanning
-                ? '동선을 다시 짜는 중이에요'
-                : '변경한 장소로 동선 다시 짜기'
-              : '다른 장소 고르기'}
+                ? t('routeSheet.rebuilding')
+                : t('routeSheet.rebuild')
+              : t('routeSheet.chooseOther')}
           </Button>
         </div>
       )}

@@ -3,7 +3,9 @@ import { CalendarDays, Coffee, Leaf, PawPrint, UtensilsCrossed, Wine } from 'luc
 import { Button } from '@/common/design-system/components/Button';
 import { NativeSelect, NativeSelectOption } from '@/common/design-system/components/NativeSelect';
 import { crowdingLevelSchema, type CrowdingLevel } from '../../models/model-crowding';
-import { categoryLabels, type Category } from '../../models/model-trip';
+import type { Category } from '../../models/model-trip';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { categoryMessageKeys, crowdingMessageKeys } from '../../i18n/trip-message-keys';
 
 const categoryOptions: { value: Category; Icon: typeof Coffee }[] = [
   { value: 'restaurant', Icon: UtensilsCrossed },
@@ -36,10 +38,14 @@ export function PlaceRadiusSelect({
   festivalOnly,
   onRadiusChange,
 }: PlaceRadiusSelectProps) {
+  const { t } = useI18n();
+  function radiusLabel(distance: string) {
+    return t('filters.radiusOption', { distance });
+  }
   return (
     <div className="radius-select">
       <label className="sr-only" htmlFor={id}>
-        검색 반경
+        {t('filters.radius')}
       </label>
       <NativeSelect
         id={id}
@@ -48,15 +54,15 @@ export function PlaceRadiusSelect({
         value={radius}
         onChange={(event) => onRadiusChange(Number(event.target.value))}
       >
-        <NativeSelectOption value={500}>반경 500m</NativeSelectOption>
-        <NativeSelectOption value={1000}>반경 1km</NativeSelectOption>
-        <NativeSelectOption value={2000}>반경 2km</NativeSelectOption>
-        <NativeSelectOption value={3000}>반경 3km</NativeSelectOption>
+        <NativeSelectOption value={500}>{radiusLabel('500m')}</NativeSelectOption>
+        <NativeSelectOption value={1000}>{radiusLabel('1km')}</NativeSelectOption>
+        <NativeSelectOption value={2000}>{radiusLabel('2km')}</NativeSelectOption>
+        <NativeSelectOption value={3000}>{radiusLabel('3km')}</NativeSelectOption>
         {festivalOnly ? (
           <>
-            <NativeSelectOption value={5000}>반경 5km</NativeSelectOption>
-            <NativeSelectOption value={10000}>반경 10km</NativeSelectOption>
-            <NativeSelectOption value={20000}>반경 20km</NativeSelectOption>
+            <NativeSelectOption value={5000}>{radiusLabel('5km')}</NativeSelectOption>
+            <NativeSelectOption value={10000}>{radiusLabel('10km')}</NativeSelectOption>
+            <NativeSelectOption value={20000}>{radiusLabel('20km')}</NativeSelectOption>
           </>
         ) : null}
       </NativeSelect>
@@ -74,11 +80,12 @@ export function PlaceFilters({
   onPetOnlyChange,
   onFestivalOnlyChange,
 }: PlaceFilterProps) {
+  const { t } = useI18n();
   return (
-    <div className="place-filters" aria-label="장소 필터">
+    <div className="place-filters" aria-label={t('filters.label')}>
       <div className="filter-row">
-        <span className="filter-label">카테고리</span>
-        <div className="filter-options" role="group" aria-label="카테고리 복수 선택">
+        <span className="filter-label">{t('filters.category')}</span>
+        <div className="filter-options" role="group" aria-label={t('filters.categoryGroup')}>
           {categoryOptions.map(({ value, Icon }) => (
             <Button
               key={value}
@@ -89,14 +96,14 @@ export function PlaceFilters({
               onClick={() => onCategoryToggle(value)}
             >
               <Icon size={14} />
-              {categoryLabels[value]}
+              {t(categoryMessageKeys[value])}
             </Button>
           ))}
         </div>
       </div>
       <div className="filter-row">
-        <span className="filter-label">혼잡도</span>
-        <div className="filter-options" role="group" aria-label="혼잡도 복수 선택">
+        <span className="filter-label">{t('filters.crowding')}</span>
+        <div className="filter-options" role="group" aria-label={t('filters.crowdingGroup')}>
           {crowdingLevelSchema.options.map((level) => (
             <Button
               key={level}
@@ -106,14 +113,14 @@ export function PlaceFilters({
               aria-pressed={crowdingLevels.includes(level)}
               onClick={() => onCrowdingLevelToggle(level)}
             >
-              {level}
+              {t(crowdingMessageKeys[level])}
             </Button>
           ))}
         </div>
       </div>
       <div className="filter-row">
-        <span className="filter-label">조건</span>
-        <div className="filter-options" role="group" aria-label="장소 조건">
+        <span className="filter-label">{t('filters.conditions')}</span>
+        <div className="filter-options" role="group" aria-label={t('filters.conditionsGroup')}>
           <Button
             variant={petOnly ? 'default' : 'outline'}
             size="sm"
@@ -122,7 +129,7 @@ export function PlaceFilters({
             onClick={onPetOnlyChange}
           >
             <PawPrint size={14} />
-            반려견 동반
+            {t('filters.pet')}
           </Button>
           <Button
             variant={festivalOnly ? 'default' : 'outline'}
@@ -132,7 +139,7 @@ export function PlaceFilters({
             onClick={onFestivalOnlyChange}
           >
             <CalendarDays size={14} />
-            이번 주 행사
+            {t('filters.festival')}
           </Button>
         </div>
       </div>

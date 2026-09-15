@@ -13,6 +13,8 @@ import {
 } from '@/common/design-system/components/Dialog';
 import { tripQueries } from '../../queries/tripQueries';
 import type { Place } from '../../models/model-trip';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { localizeTripText } from '../../i18n/localize-trip-text';
 
 interface Props {
   value: Place | null;
@@ -20,6 +22,7 @@ interface Props {
   onChange: (place: Place) => void;
 }
 export function OriginPicker({ value, demo, onChange }: Props) {
+  const { locale, t } = useI18n();
   const originSearch = useRef<HTMLInputElement>(null);
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
@@ -44,7 +47,7 @@ export function OriginPicker({ value, demo, onChange }: Props) {
       >
         <Search size={19} />
         <label className="sr-only" htmlFor="origin-search">
-          출발 장소 검색
+          {t('origin.searchLabel')}
         </label>
         <Input
           className="h-10 border-0 px-0 text-base shadow-none focus-visible:ring-0 md:text-xs"
@@ -53,9 +56,14 @@ export function OriginPicker({ value, demo, onChange }: Props) {
           value={input}
           maxLength={80}
           onChange={(event) => setInput(event.target.value)}
-          placeholder={demo ? '예시: 성수역, 작은 식탁' : '지금 묵는 숙소 이름이나 주소'}
+          placeholder={demo ? t('origin.placeholderDemo') : t('origin.placeholder')}
         />
-        <Button size="icon-sm" type="submit" aria-label="장소 검색" disabled={!input.trim()}>
+        <Button
+          size="icon-sm"
+          type="submit"
+          aria-label={t('origin.searchButton')}
+          disabled={!input.trim()}
+        >
           <ArrowRight size={18} />
         </Button>
       </form>
@@ -67,17 +75,17 @@ export function OriginPicker({ value, demo, onChange }: Props) {
           }}
         >
           <DialogHeader>
-            <DialogTitle>여기서 출발할까요?</DialogTitle>
-            <DialogDescription>검색한 장소 중 오늘의 출발점을 골라주세요.</DialogDescription>
+            <DialogTitle>{t('origin.dialogTitle')}</DialogTitle>
+            <DialogDescription>{t('origin.dialogDescription')}</DialogDescription>
           </DialogHeader>
           <section
             className="max-h-[45dvh] overflow-y-auto overscroll-contain"
-            aria-label="출발 장소 검색 결과"
+            aria-label={t('origin.results')}
           >
             {search.isFetching ? (
-              <p role="status">장소를 찾고 있어요.</p>
+              <p role="status">{t('search.loading')}</p>
             ) : search.error ? (
-              <p role="alert">{search.error.message}</p>
+              <p role="alert">{localizeTripText(locale, search.error.message)}</p>
             ) : search.data?.length ? (
               search.data.map((place) => (
                 <Button
@@ -95,10 +103,7 @@ export function OriginPicker({ value, demo, onChange }: Props) {
                 </Button>
               ))
             ) : (
-              <p>
-                검색 결과가 없어요.{' '}
-                {demo ? '예시 모드에서는 성수역을 검색해보세요.' : '장소명이나 주소를 바꿔보세요.'}
-              </p>
+              <p>{demo ? t('search.noResultsDemo') : t('search.noResults')}</p>
             )}
           </section>
         </DialogContent>
@@ -109,7 +114,7 @@ export function OriginPicker({ value, demo, onChange }: Props) {
             <MapPin size={19} />
           </span>
           <div>
-            <small>오늘의 시작점</small>
+            <small>{t('origin.selected')}</small>
             <strong>{value.name}</strong>
           </div>
           <span className="origin-check">
@@ -118,7 +123,7 @@ export function OriginPicker({ value, demo, onChange }: Props) {
         </div>
       ) : (
         <div className="origin-placeholder">
-          <MapPin size={18} /> 묵는 숙소나 출발할 장소를 검색해주세요.
+          <MapPin size={18} /> {t('origin.empty')}
         </div>
       )}
     </>

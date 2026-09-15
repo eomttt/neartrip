@@ -63,7 +63,7 @@ async function setup(hasOrigin = true) {
 async function editPlaces(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     screen.getByRole('button', {
-      name: screen.queryByRole('dialog', { name: '이동 안내' })
+      name: screen.queryByRole('region', { name: '이동 안내' })
         ? '장소·순서 수정'
         : '1단계 출발·도착·주변 선택',
     }),
@@ -76,16 +76,30 @@ async function openSelected(user: ReturnType<typeof userEvent.setup>) {
   }
 }
 
+async function openNearbyFilters(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /장소 필터/ }));
+  return screen.getByRole('dialog', { name: '장소 필터' });
+}
+
+async function closeNearbyFilters(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    within(screen.getByRole('dialog', { name: '장소 필터' })).getByRole('button', {
+      name: '장소 보기',
+    }),
+  );
+}
+
 async function build(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /^순서대로 동선 짜기/ }));
-  await screen.findByRole('button', { name: '이동 안내 보기' });
+  await screen.findByRole('button', { name: '지도 넓게 보기' });
   expect(screen.getByRole('button', { name: '2단계 동선 보기' }).getAttribute('aria-current')).toBe(
     'step',
   );
 }
 
 async function showDetails(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: '이동 안내 보기' }));
+  const showButton = screen.queryByRole('button', { name: '이동 안내 보기' });
+  if (showButton) await user.click(showButton);
   expect(screen.getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
 }
 
@@ -147,18 +161,22 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
   });
   it('행사와 반려견 필터를 바꿔도 담은 장소를 유지하고 동선을 만든다', async () => {
     const user = await setup();
-    await user.click(screen.getByRole('button', { name: '이번 주 행사' }));
+    let filters = await openNearbyFilters(user);
+    await user.click(within(filters).getByRole('button', { name: '이번 주 행사' }));
+    await closeNearbyFilters(user);
     const events = await screen.findAllByRole('button', { name: /동네 행사 예시 담기/ });
     const event = events[0];
     if (!event) throw new Error('행사 예시 없음');
     await user.click(event);
-    expect(screen.getByRole('group', { name: '카테고리 복수 선택' })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '반려견 동반' }));
+    filters = await openNearbyFilters(user);
+    expect(within(filters).getByRole('group', { name: '카테고리 복수 선택' })).toBeTruthy();
+    await user.click(within(filters).getByRole('button', { name: '반려견 동반' }));
+    await closeNearbyFilters(user);
     const pets = await screen.findAllByRole('button', { name: /반려견 동반 예시 담기/ });
     const pet = pets[0];
     if (!pet) throw new Error('반려견 예시 없음');
     await user.click(pet);
-    expect(await screen.findByRole('group', { name: '카테고리 복수 선택' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /장소 필터 \d+개 적용/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /담은 장소 2 \/ 5/ })).toBeTruthy();
     await build(user);
   });
@@ -167,17 +185,46 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     const user = await setup();
     const list = screen.getByRole('region', { name: '주변 장소 목록' });
     expect(within(list).getByRole('button', { name: '작은 식탁 담기' })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '맛집' }));
+    expect(screen.queryByRole('group', { name: '카테고리 복수 선택' })).toBeNull();
+    const filterTrigger = screen.getByRole('button', { name: '장소 필터' });
+    const filters = await openNearbyFilters(user);
+    await user.click(within(filters).getByRole('button', { name: '맛집' }));
+    expect(list.textContent).toContain('작은 식탁');
+    expect(filterTrigger.getAttribute('aria-label')).toBe('장소 필터');
+    expect(within(filters).getByRole('button', { name: '카페' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(
+      within(filters).getByRole('button', { name: '갈 만한 곳' }).getAttribute('aria-pressed'),
+    ).toBe('true');
+    expect(
+      within(filters).getByRole('button', { name: '술 한잔' }).getAttribute('aria-pressed'),
+    ).toBe('true');
+    await user.click(within(filters).getByRole('button', { name: '반려견 동반' }));
+    await closeNearbyFilters(user);
     expect(within(list).queryByRole('button', { name: '작은 식탁 담기' })).toBeNull();
-    expect(screen.getByRole('button', { name: '카페' }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: '갈 만한 곳' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    );
-    expect(screen.getByRole('button', { name: '술 한잔' }).getAttribute('aria-pressed')).toBe(
-      'true',
-    );
-    await user.click(screen.getByRole('button', { name: '반려견 동반' }));
     expect(await within(list).findAllByText('반려견 동반')).not.toHaveLength(0);
+  });
+
+  it('필터 시트를 닫으면 변경을 버리고 다시 열 때 적용된 조건을 보여준다', async () => {
+    const user = await setup();
+    const list = screen.getByRole('region', { name: '주변 장소 목록' });
+    let filters = await openNearbyFilters(user);
+    await user.click(within(filters).getByRole('button', { name: '맛집' }));
+    expect(list.textContent).toContain('작은 식탁');
+    await user.click(within(filters).getByRole('button', { name: '닫기' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '장소 필터' })).toBeNull());
+    expect(within(list).getByRole('button', { name: '작은 식탁 담기' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '장소 필터' })).toBeTruthy();
+
+    filters = await openNearbyFilters(user);
+    expect(within(filters).getByRole('button', { name: '맛집' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    await user.click(within(filters).getByRole('button', { name: '맛집' }));
+    await closeNearbyFilters(user);
+    expect(within(list).queryByRole('button', { name: '작은 식탁 담기' })).toBeNull();
+    expect(screen.getByRole('button', { name: '장소 필터 1개 적용' })).toBeTruthy();
   });
   it('출발지를 먼저 선택해야 주변 목록을 보여주고 요약으로 포커스를 옮긴다', async () => {
     const currentFetch = globalThis.fetch;
@@ -237,24 +284,45 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(screen.getByRole('region', { name: '여행 지도' })).toBeTruthy();
   });
 
-  it('지도에서 담은 장소를 다시 눌러도 선택을 해제하지 않는다', async () => {
+  it('지도에서 담은 장소를 다시 누르면 목록에서 빼고 동선을 다시 만든다', async () => {
     const user = await setup();
     await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));
+    await user.click(screen.getByRole('button', { name: '오후의 커피 담기' }));
     await build(user);
-    const selectedPin = screen.getByRole('button', { name: '작은 식탁 선택됨' });
-    expect(selectedPin.getAttribute('aria-disabled')).toBe('true');
+    const selectedPin = screen.getByRole('button', { name: '작은 식탁 지도에서 빼기' });
+    expect(selectedPin.getAttribute('aria-pressed')).toBe('true');
     await user.click(selectedPin);
     expect(screen.getByRole('region', { name: '여행 지도' }).getAttribute('data-active')).toBe(
       'true',
     );
-    await editPlaces(user);
-    expect(screen.getByRole('button', { name: '작은 식탁 빼기' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '작은 식탁 지도에서 선택' })).toBeTruthy();
+    const pendingPlaces = screen.getByRole('list', { name: '현재 담은 장소' });
+    expect(within(pendingPlaces).queryByText('작은 식탁')).toBeNull();
+    expect(within(pendingPlaces).getByText('오후의 커피')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '변경한 장소로 동선 다시 짜기' }));
+    await screen.findByRole('button', { name: '지도 넓게 보기' });
+  });
+
+  it('지도에서 마지막 장소를 빼면 다른 장소를 고를 수 있다', async () => {
+    const user = await setup();
+    await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));
+    await build(user);
+    await user.click(screen.getByRole('button', { name: '작은 식탁 지도에서 빼기' }));
+    await user.click(screen.getByRole('button', { name: '다른 장소 고르기' }));
+    expect(
+      screen
+        .getByRole('button', { name: '1단계 출발·도착·주변 선택' })
+        .getAttribute('aria-current'),
+    ).toBe('step');
+    expect(screen.getByRole('button', { name: '작은 식탁 담기' })).toBeTruthy();
   });
 
   it('지도 장소에 호버하면 카드 정보를 보여주고 선택해도 지도에 머문다', async () => {
     const user = await setup();
     await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));
     await build(user);
+    const map = screen.getByRole('region', { name: '여행 지도' });
+    expect(map.getAttribute('data-route-details')).toBe('true');
     const pin = screen.getByRole('button', { name: '오후의 커피 지도에서 선택' });
     await user.hover(pin);
     const preview = screen.getByRole('tooltip', { name: '오후의 커피 장소 정보' });
@@ -262,10 +330,13 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(within(preview).getByText('성수동 예시 골목 2')).toBeTruthy();
     expect(within(preview).getByText(/^직선 /)).toBeTruthy();
     await user.click(pin);
-    expect(screen.getByRole('region', { name: '여행 지도' }).getAttribute('data-active')).toBe(
-      'true',
-    );
-    expect(screen.getByRole('button', { name: '오후의 커피 선택됨' })).toBeTruthy();
+    expect(map.getAttribute('data-active')).toBe('true');
+    expect(map.getAttribute('data-route-details')).toBe('true');
+    expect(screen.getByText('장소가 바뀌었어요')).toBeTruthy();
+    expect(
+      within(screen.getByRole('list', { name: '현재 담은 장소' })).getByText('오후의 커피'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: '오후의 커피 지도에서 빼기' })).toBeTruthy();
   });
 
   it('동선 보기에서 필터를 바꾸고 지도 마커로 장소를 더 담는다', async () => {
@@ -283,12 +354,12 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(screen.queryByRole('button', { name: '모퉁이 소반 지도에서 선택' })).toBeNull();
     const cafe = screen.getByRole('button', { name: '오후의 커피 지도에서 선택' });
     await user.click(cafe);
-    expect(screen.getByRole('button', { name: '오후의 커피 선택됨' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '오후의 커피 지도에서 빼기' })).toBeTruthy();
     expect(screen.getByRole('region', { name: '여행 지도' }).getAttribute('data-active')).toBe(
       'true',
     );
     await user.click(screen.getByRole('button', { name: '변경한 장소로 동선 다시 짜기' }));
-    await screen.findByRole('button', { name: '이동 안내 보기' });
+    await screen.findByRole('button', { name: '지도 넓게 보기' });
     expect(screen.getByRole('region', { name: '여행 지도' }).getAttribute('data-active')).toBe(
       'true',
     );
@@ -314,14 +385,18 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
   it('카테고리와 반경 필터를 바꿔도 담은 장소는 유지한다', async () => {
     const user = await setup();
     await user.click(screen.getByRole('button', { name: '초록 산책길 담기' }));
-    await user.selectOptions(screen.getByRole('combobox', { name: '검색 반경' }), '500');
+    let filters = await openNearbyFilters(user);
+    await user.selectOptions(within(filters).getByRole('combobox', { name: '검색 반경' }), '500');
+    await closeNearbyFilters(user);
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: '초록 산책길 빼기' })).toBeNull(),
     );
     expect(screen.getByText(/담은 장소 1 \/ 5/)).toBeTruthy();
-    const categories = screen.getByRole('group', { name: '카테고리 복수 선택' });
+    filters = await openNearbyFilters(user);
+    const categories = within(filters).getByRole('group', { name: '카테고리 복수 선택' });
     await user.click(within(categories).getByRole('button', { name: '맛집' }));
     await user.click(within(categories).getByRole('button', { name: '갈 만한 곳' }));
+    await closeNearbyFilters(user);
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: '작은 식탁 담기' })).toBeNull(),
     );
@@ -451,13 +526,12 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     await user.click(legButton);
     const firstHighlight = screen.getByRole('status', { name: '성수역 → 작은 식탁 이동 미리보기' });
     expect(firstHighlight.querySelectorAll('polyline')).toHaveLength(1);
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: '2단계 동선 보기' }));
-    await showDetails(user);
-    await user.click(screen.getByRole('button', { name: '1. 성수역 → 작은 식탁 지도에서 보기' }));
+    expect(document.activeElement).toBe(legButton);
+    expect(screen.getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
+    await user.click(legButton);
     expect(screen.getByRole('status', { name: '성수역 → 작은 식탁 이동 미리보기' })).not.toBe(
       firstHighlight,
     );
-    await showDetails(user);
     const step = screen.getByRole('button', {
       name: '1-1. 예시 이동 · 실제 길찾기가 아닙니다 지도에서 보기',
     });
@@ -466,6 +540,9 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(
       screen.getByRole('status', { name: '예시 이동 · 실제 길찾기가 아닙니다 이동 미리보기' }),
     ).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '전체 동선 보기' }));
+    expect(screen.queryByRole('status', { name: /이동 미리보기/ })).toBeNull();
+    expect(step.getAttribute('aria-pressed')).toBe('false');
     await editPlaces(user);
     await user.click(screen.getByRole('button', { name: '작은 식탁 빼기' }));
     expect(screen.getByRole('button', { name: '2단계 동선 보기' }).hasAttribute('disabled')).toBe(
@@ -474,27 +551,32 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(screen.queryByText('예시 동선을 만들었어요')).toBeNull();
   });
 
-  it('이동 안내를 지도 위에 열고 닫아도 지도를 유지하고 포커스를 돌려준다', async () => {
+  it('지도와 이동 안내를 함께 보여주고 안내를 접으면 지도에 초점을 돌려준다', async () => {
     const user = await setup();
     await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));
     await build(user);
     const map = screen.getByRole('region', { name: '여행 지도' });
-    const trigger = screen.getByRole('button', { name: '이동 안내 보기' });
-    await user.click(trigger);
-    const sheet = screen.getByRole('dialog', { name: '이동 안내' });
+    const sheet = screen.getByRole('region', { name: '이동 안내' });
     expect(map.getAttribute('data-active')).toBe('true');
-    expect(sheet.contains(document.activeElement)).toBe(true);
+    expect(map.getAttribute('data-route-details')).toBe('true');
     expect(within(sheet).getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
-    await user.tab({ shift: true });
-    expect(sheet.contains(document.activeElement)).toBe(true);
+    expect(screen.getByRole('button', { name: '전체 동선 보기' })).toBeTruthy();
+    const trigger = screen.getByRole('button', { name: '지도 넓게 보기' });
+    await user.click(trigger);
+    expect(map.getAttribute('data-route-details')).toBe('false');
+    expect(document.activeElement).toBe(trigger);
+    await user.click(screen.getByRole('button', { name: '이동 안내 보기' }));
+    expect(map.getAttribute('data-route-details')).toBe('true');
+    const legButton = within(sheet).getByRole('button', {
+      name: '1. 성수역 → 작은 식탁 지도에서 보기',
+    });
+    await user.click(legButton);
+    expect(screen.getByRole('status', { name: '성수역 → 작은 식탁 이동 미리보기' })).toBeTruthy();
+    expect(within(sheet).getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
     await user.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(map.getAttribute('data-route-details')).toBe('false');
     expect(document.activeElement).toBe(trigger);
     expect(screen.getByRole('region', { name: '여행 지도' })).toBe(map);
-    await user.click(trigger);
-    await user.click(screen.getByRole('button', { name: '닫기' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.activeElement).toBe(trigger);
   });
 
   it('동선 생성 중 선택을 바꾸면 이전 응답을 버리고 새 선택으로 다시 만든다', async () => {

@@ -13,6 +13,7 @@ export function TripMap({
   places,
   selected,
   itinerary,
+  onShowEntireRoute,
   onSelect,
 }: Props) {
   const MapComponent = demo ? DemoMap : KakaoMap;
@@ -25,6 +26,7 @@ export function TripMap({
         places={places}
         selected={selected}
         itinerary={itinerary}
+        onShowEntireRoute={onShowEntireRoute}
         onSelect={onSelect}
       />
       <div className="map-top-label">

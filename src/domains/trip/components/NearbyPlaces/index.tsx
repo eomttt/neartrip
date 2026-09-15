@@ -1,10 +1,34 @@
 import './style.css';
+import { useState } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import { koreaWeekRange } from '../../utils/korea-date';
-import type { CrowdingByPlace, CrowdingLevel } from '../../models/model-crowding';
+import {
+  crowdingLevelSchema,
+  type CrowdingByPlace,
+  type CrowdingLevel,
+} from '../../models/model-crowding';
 import { Button } from '@/common/design-system/components/Button';
-import type { Category, Place } from '../../models/model-trip';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+  DialogTrigger,
+} from '@/common/design-system/components/Dialog';
+import { categorySchema, type Category, type Place } from '../../models/model-trip';
 import { PlaceCard } from '../PlaceCard';
 import { PlaceFilters, PlaceRadiusSelect } from '../PlaceFilters';
+
+interface FilterSelection {
+  categories: Category[];
+  radius: number;
+  crowdingLevels: CrowdingLevel[];
+  petOnly: boolean;
+  festivalOnly: boolean;
+}
+
 interface Props {
   crowdingByPlace: CrowdingByPlace;
   hasMore: boolean;
@@ -57,31 +81,142 @@ export function NearbyPlaces({
   onRetry,
   onSelect,
 }: Props) {
+  const [draftFilters, setDraftFilters] = useState<FilterSelection>(() => ({
+    categories: [...selectedCategories],
+    radius,
+    crowdingLevels: [...crowdingLevels],
+    petOnly,
+    festivalOnly,
+  }));
   const week = koreaWeekRange();
   const formatDay = (date: string) => `${Number(date.slice(4, 6))}.${Number(date.slice(6, 8))}`;
   const selectedIds = new Set(selected.map((place) => place.id));
   const resultCount = places.length > 0 ? places.length : recommendations.length;
+  const activeFilterCount =
+    Number(selectedCategories.length !== categorySchema.options.length) +
+    Number(radius !== 1_000) +
+    Number(crowdingLevels.length > 0) +
+    Number(petOnly || festivalOnly);
+
+  function handleFilterSheetOpenChange(open: boolean) {
+    if (!open) return;
+    setDraftFilters({
+      categories: [...selectedCategories],
+      radius,
+      crowdingLevels: [...crowdingLevels],
+      petOnly,
+      festivalOnly,
+    });
+  }
+
+  function handleApplyFilters() {
+    for (const category of categorySchema.options) {
+      if (selectedCategories.includes(category) !== draftFilters.categories.includes(category)) {
+        onCategoryToggle(category);
+      }
+    }
+    for (const level of crowdingLevelSchema.options) {
+      if (crowdingLevels.includes(level) !== draftFilters.crowdingLevels.includes(level)) {
+        onCrowdingLevelToggle(level);
+      }
+    }
+    if (draftFilters.petOnly) {
+      if (!petOnly) onPetOnlyChange();
+    } else if (draftFilters.festivalOnly) {
+      if (!festivalOnly) onFestivalOnlyChange();
+    } else if (petOnly) {
+      onPetOnlyChange();
+    } else if (festivalOnly) {
+      onFestivalOnlyChange();
+    }
+    if (radius !== draftFilters.radius) onRadiusChange(draftFilters.radius);
+  }
+
   return (
     <section className="nearby-section" aria-labelledby="nearby-title">
       <div className="section-heading">
         <h2 id="nearby-title">오늘 들러볼 곳</h2>
-        <PlaceRadiusSelect
-          id="search-radius"
-          radius={radius}
-          festivalOnly={festivalOnly}
-          onRadiusChange={onRadiusChange}
-        />
+        <Dialog onOpenChange={handleFilterSheetOpenChange}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="nearby-filter-trigger"
+              aria-label={
+                activeFilterCount > 0 ? `장소 필터 ${activeFilterCount}개 적용` : '장소 필터'
+              }
+            >
+              <SlidersHorizontal size={15} />
+              필터
+              {activeFilterCount > 0 ? <span aria-hidden="true">{activeFilterCount}</span> : null}
+            </Button>
+          </DialogTrigger>
+          <DialogContent placement="bottom" className="nearby-filter-sheet">
+            <div className="nearby-filter-heading">
+              <DialogTitle>장소 필터</DialogTitle>
+              <DialogDescription>
+                장소 보기를 누르면 선택한 조건이 목록에 반영돼요.
+              </DialogDescription>
+            </div>
+            <div className="nearby-filter-radius">
+              <span>검색 반경</span>
+              <PlaceRadiusSelect
+                id="search-radius"
+                radius={draftFilters.radius}
+                festivalOnly={draftFilters.festivalOnly}
+                onRadiusChange={(nextRadius) =>
+                  setDraftFilters((current) => ({ ...current, radius: nextRadius }))
+                }
+              />
+            </div>
+            <PlaceFilters
+              categories={draftFilters.categories}
+              crowdingLevels={draftFilters.crowdingLevels}
+              petOnly={draftFilters.petOnly}
+              festivalOnly={draftFilters.festivalOnly}
+              onCategoryToggle={(category) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  categories: current.categories.includes(category)
+                    ? current.categories.filter((value) => value !== category)
+                    : [...current.categories, category],
+                }))
+              }
+              onCrowdingLevelToggle={(level) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  crowdingLevels: current.crowdingLevels.includes(level)
+                    ? current.crowdingLevels.filter((value) => value !== level)
+                    : [...current.crowdingLevels, level],
+                }))
+              }
+              onPetOnlyChange={() =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  petOnly: !current.petOnly,
+                  festivalOnly: false,
+                  radius: Math.min(current.radius, 3_000),
+                }))
+              }
+              onFestivalOnlyChange={() =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  festivalOnly: !current.festivalOnly,
+                  petOnly: false,
+                  radius: current.festivalOnly ? Math.min(current.radius, 3_000) : current.radius,
+                }))
+              }
+            />
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button className="w-full" onClick={handleApplyFilters}>
+                  장소 보기
+                </Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-      <PlaceFilters
-        categories={selectedCategories}
-        crowdingLevels={crowdingLevels}
-        petOnly={petOnly}
-        festivalOnly={festivalOnly}
-        onCategoryToggle={onCategoryToggle}
-        onCrowdingLevelToggle={onCrowdingLevelToggle}
-        onPetOnlyChange={onPetOnlyChange}
-        onFestivalOnlyChange={onFestivalOnlyChange}
-      />
       <div className="results-caption">
         <span>
           {demo

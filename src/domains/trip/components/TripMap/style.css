@@ -59,7 +59,7 @@
     right: 20px;
     bottom: 90px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     box-shadow: 0 3px 18px #263c3212;
     background: var(--paper);
     border: 1px solid #fff;
@@ -74,7 +74,14 @@
     color: #63715e;
   }
   .map-controls button + button {
-    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+  }
+  .map-controls .map-overview-action {
+    display: flex;
+    width: auto;
+    gap: 6px;
+    padding-inline: 10px;
+    white-space: nowrap;
   }
   .map-controls button:hover {
     background: var(--sage);

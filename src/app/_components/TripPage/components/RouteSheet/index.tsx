@@ -1,86 +1,123 @@
-import { useRef, useState, type ComponentProps } from 'react';
-import { ListOrdered } from 'lucide-react';
+import { useId, useRef, type ComponentProps, type KeyboardEvent } from 'react';
+import { ArrowLeft, ChevronDown, ListOrdered } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from '@/common/design-system/components/Dialog';
+import type { Place } from '@/domains/trip/models/model-trip';
 import { RouteSummary } from '@/domains/trip/components/RouteSummary';
 import './style.css';
 
 type Props = ComponentProps<typeof RouteSummary> & {
+  selected: Place[];
+  isOpen: boolean;
   isPlanning: boolean;
+  onOpenChange: (open: boolean) => void;
   onRebuild: () => void;
-  onReturnFocus: (target: 'map' | 'discover') => void;
 };
 export function RouteSheet({
   origin,
   destination,
   itinerary,
+  selected,
   activeRoute,
+  isOpen,
   isPlanning,
   onFocusRoute,
   onEdit,
+  onOpenChange,
   onRebuild,
-  onReturnFocus,
 }: Props) {
-  const [showRouteDetails, setShowRouteDetails] = useState(false);
-  const sheetReturnTarget = useRef<'trigger' | 'map' | 'discover'>('trigger');
+  const detailsId = useId();
+  const toggleButton = useRef<HTMLButtonElement>(null);
+  const canRebuild = selected.length > 0 || !!destination;
+
+  function handleDirectionsKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'Escape') return;
+    event.stopPropagation();
+    onOpenChange(false);
+    toggleButton.current?.focus({ preventScroll: true });
+  }
+
+  function handlePendingAction() {
+    if (canRebuild) {
+      onRebuild();
+      return;
+    }
+    onOpenChange(false);
+    onEdit();
+  }
+
   return (
-    <Dialog
-      open={showRouteDetails}
-      onOpenChange={(open) => {
-        sheetReturnTarget.current = 'trigger';
-        setShowRouteDetails(open);
-      }}
-    >
-      <div className="map-next-action">
-        {itinerary ? (
-          <DialogTrigger asChild>
-            <Button className="w-full">
-              <ListOrdered size={17} /> 이동 안내 보기
-            </Button>
-          </DialogTrigger>
-        ) : (
-          <Button className="w-full" disabled={isPlanning} onClick={onRebuild}>
-            {isPlanning ? <span className="spinner" /> : <ListOrdered size={17} />}
-            {isPlanning ? '동선을 다시 짜는 중이에요' : '변경한 장소로 동선 다시 짜기'}
+    <div className="route-sheet" data-open={isOpen}>
+      {itinerary ? (
+        <>
+          <Button
+            ref={toggleButton}
+            variant="ghost"
+            className="route-sheet-toggle"
+            aria-expanded={isOpen}
+            aria-controls={detailsId}
+            onClick={() => onOpenChange(!isOpen)}
+          >
+            <ListOrdered size={17} />
+            <span>{isOpen ? '지도 넓게 보기' : '이동 안내 보기'}</span>
+            <ChevronDown size={17} className={isOpen ? '' : 'rotate-180'} aria-hidden="true" />
           </Button>
-        )}
-      </div>
-      <DialogContent
-        placement="bottom"
-        className="route-sheet h-[64dvh] overflow-hidden px-5 pt-6 pb-[max(16px,env(safe-area-inset-bottom))]"
-        onCloseAutoFocus={(event) => {
-          if (sheetReturnTarget.current === 'trigger') return;
-          event.preventDefault();
-          onReturnFocus(sheetReturnTarget.current);
-        }}
-      >
-        <DialogTitle className="sr-only">이동 안내</DialogTitle>
-        <DialogDescription className="sr-only">
-          구간을 선택하면 안내를 닫고 지도에서 이동 경로를 보여줘요.
-        </DialogDescription>
-        <RouteSummary
-          activeRoute={activeRoute}
-          onFocusRoute={(legIndex, segmentIndex) => {
-            sheetReturnTarget.current = 'map';
-            setShowRouteDetails(false);
-            onFocusRoute(legIndex, segmentIndex);
-          }}
-          onEdit={() => {
-            sheetReturnTarget.current = 'discover';
-            setShowRouteDetails(false);
-            onEdit();
-          }}
-          origin={origin}
-          destination={destination}
-          itinerary={itinerary}
-        />
-      </DialogContent>
-    </Dialog>
+          <div
+            id={detailsId}
+            className="route-sheet-content"
+            hidden={!isOpen}
+            onKeyDown={handleDirectionsKeyDown}
+          >
+            <RouteSummary
+              activeRoute={activeRoute}
+              onFocusRoute={onFocusRoute}
+              onEdit={() => {
+                onOpenChange(false);
+                onEdit();
+              }}
+              origin={origin}
+              destination={destination}
+              itinerary={itinerary}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="route-sheet-pending">
+          {isOpen ? (
+            <>
+              <strong>장소가 바뀌었어요</strong>
+              <p>새 동선을 만들면 지금 담은 장소가 반영돼요.</p>
+              {selected.length > 0 ? (
+                <ol aria-label="현재 담은 장소">
+                  {selected.map((place, index) => (
+                    <li key={place.id}>
+                      <span>{index + 1}</span>
+                      <span>{place.name}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
+            </>
+          ) : null}
+          <Button
+            className="route-sheet-rebuild"
+            disabled={canRebuild && isPlanning}
+            onClick={handlePendingAction}
+          >
+            {canRebuild && isPlanning ? (
+              <span className="spinner" />
+            ) : canRebuild ? (
+              <ListOrdered size={17} />
+            ) : (
+              <ArrowLeft size={17} />
+            )}
+            {canRebuild
+              ? isPlanning
+                ? '동선을 다시 짜는 중이에요'
+                : '변경한 장소로 동선 다시 짜기'
+              : '다른 장소 고르기'}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

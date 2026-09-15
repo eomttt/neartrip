@@ -586,4 +586,14 @@
     background: var(--background);
     border-top: 1px solid var(--border);
   }
+  @media (max-width: 680px) {
+    .app-shell .app-header {
+      display: none;
+    }
+    .app-shell .trip-stepper button {
+      flex-direction: row;
+      justify-content: center;
+      white-space: nowrap;
+    }
+  }
 }

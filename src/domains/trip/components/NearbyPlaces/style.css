@@ -2,6 +2,56 @@
   .nearby-section {
     margin-top: 29px;
   }
+  .nearby-filter-trigger {
+    min-height: 34px;
+    gap: 6px;
+  }
+  .nearby-filter-trigger span {
+    display: grid;
+    min-width: 18px;
+    height: 18px;
+    place-items: center;
+    padding-inline: 4px;
+    border-radius: var(--radius-lg);
+    background: var(--secondary);
+    color: var(--primary);
+    font-size: var(--text-xs);
+  }
+  .nearby-filter-sheet {
+    gap: 14px;
+    padding: 24px 20px max(18px, env(safe-area-inset-bottom));
+  }
+  .nearby-filter-heading {
+    display: grid;
+    flex-shrink: 0;
+    gap: 7px;
+    padding-right: 24px;
+  }
+  .nearby-filter-heading [data-slot='dialog-description'] {
+    line-height: 1.5;
+  }
+  .nearby-filter-radius {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--muted-foreground);
+    font-size: var(--text-xs);
+  }
+  .nearby-filter-sheet .place-filters {
+    min-height: 0;
+    margin: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+  .nearby-filter-sheet .filter-options {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .nearby-filter-sheet [data-slot='dialog-footer'] {
+    flex-shrink: 0;
+  }
   .results-caption {
     display: flex;
     justify-content: space-between;

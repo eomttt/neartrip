@@ -26,6 +26,7 @@ interface Props {
   places: Place[];
   selected: Place[];
   itinerary: Itinerary | null;
+  onShowEntireRoute: () => void;
   onSelect: (place: Place) => void;
 }
 function point(place: { lat: number; lng: number }) {
@@ -39,6 +40,7 @@ export function DemoMap({
   places,
   selected,
   itinerary,
+  onShowEntireRoute,
   onSelect,
 }: Props) {
   const [zoom, setZoom] = useState(1);
@@ -212,7 +214,7 @@ export function DemoMap({
             const isOrigin = place.id === origin?.id;
             const isDestination = place.id === destination?.id;
             const index = selected.findIndex((item) => item.id === place.id);
-            const canSelect = !isOrigin && !isDestination && index < 0;
+            const canToggle = !isOrigin && !isDestination;
             const color =
               isOrigin || isDestination || index >= 0
                 ? '#245d46'
@@ -251,14 +253,15 @@ export function DemoMap({
                 ) : null}
                 <g
                   role="button"
-                  tabIndex={canSelect ? 0 : -1}
-                  aria-disabled={!canSelect}
-                  aria-label={`${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : index >= 0 ? ' 선택됨' : ' 지도에서 선택'}`}
+                  tabIndex={canToggle ? 0 : -1}
+                  aria-disabled={!canToggle}
+                  aria-pressed={canToggle ? index >= 0 : undefined}
+                  aria-label={`${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : index >= 0 ? ' 지도에서 빼기' : ' 지도에서 선택'}`}
                   onClick={() => {
-                    if (canSelect) onSelect(place);
+                    if (canToggle) onSelect(place);
                   }}
                   onKeyDown={(event) => {
-                    if (canSelect && (event.key === 'Enter' || event.key === ' ')) {
+                    if (canToggle && (event.key === 'Enter' || event.key === ' ')) {
                       event.preventDefault();
                       onSelect(place);
                     }
@@ -323,14 +326,17 @@ export function DemoMap({
         </Button>
         <Button
           variant="outline"
-          size="icon"
-          aria-label="예시 지도 전체 보기"
+          size="sm"
+          className="map-overview-action h-9 w-auto px-3 text-xs"
+          aria-label={itinerary ? '전체 동선 보기' : '예시 지도 전체 보기'}
           onClick={() => {
             setZoom(1);
             setFocus(null);
+            onShowEntireRoute();
           }}
         >
           <Crosshair size={18} />
+          <span>{itinerary ? '전체 동선' : '전체 보기'}</span>
         </Button>
       </div>
       <span className="demo-watermark">예시 개략도 · 실제 지도와 경로가 아닙니다</span>

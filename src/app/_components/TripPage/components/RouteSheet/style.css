@@ -1,14 +1,87 @@
 @layer components {
-  .map-next-action {
-    position: absolute;
-    bottom: 32px;
-    left: 20px;
-    right: 20px;
-    z-index: 4;
+  .map-panel {
+    --route-sheet-height: min(54%, 430px);
   }
-  .map-next-action button {
+  .route-sheet {
+    position: absolute;
+    inset: auto 0 0;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding: 8px 16px max(12px, env(safe-area-inset-bottom));
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+    background: var(--paper);
+    box-shadow: 0 -8px 28px #263c321c;
+  }
+  .route-sheet[data-open='true'] {
+    height: var(--route-sheet-height);
+  }
+  .route-sheet-toggle,
+  .route-sheet-rebuild {
+    width: 100%;
     min-height: 44px;
-    box-shadow: 0 2px 12px #263c3226;
+    flex-shrink: 0;
+  }
+  .route-sheet-toggle {
+    gap: 10px;
+    justify-content: flex-start;
+    color: var(--primary);
+  }
+  .route-sheet-toggle span {
+    flex: 1;
+    text-align: left;
+  }
+  .route-sheet-pending {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 14px;
+  }
+  .route-sheet-pending strong {
+    color: var(--primary);
+    font-size: 16px;
+  }
+  .route-sheet-pending p {
+    color: var(--muted-foreground);
+    font-size: 13px;
+  }
+  .route-sheet-pending ol {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .route-sheet-pending li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 2px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .route-sheet-pending li span:first-child {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--sage);
+    color: var(--primary);
+    font-size: 11px;
+  }
+  .route-sheet-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .route-sheet-content[hidden] {
+    display: none;
   }
   .route-sheet .route-panel {
     display: flex;
@@ -17,27 +90,51 @@
     min-height: 0;
   }
   .route-sheet .section-heading {
-    padding-right: 24px;
+    padding-block: 5px;
   }
   .route-sheet .route-start {
-    padding-block: 8px;
-  }
-  .route-sheet .route-start span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: none;
   }
   .route-sheet .route-result {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    margin-bottom: 0;
+    margin: 4px 0 0;
+    padding: 10px;
   }
   .route-sheet .route-details-scroll {
     flex: 1;
     min-height: 0;
     max-height: none;
     overscroll-behavior-y: contain;
+  }
+  .map-panel[data-route-details='true'] .demo-canvas,
+  .map-panel[data-route-details='true'] .kakao-canvas {
+    height: calc(100% - var(--route-sheet-height));
+  }
+  .map-panel[data-route-details='true'] .map-controls {
+    bottom: calc(var(--route-sheet-height) + 14px);
+  }
+  .map-panel[data-route-details='true'] .map-legend {
+    display: none;
+  }
+  @media (max-height: 620px) {
+    .map-panel {
+      --route-sheet-height: min(52%, 330px);
+    }
+    .route-sheet .route-detail-hint {
+      display: none;
+    }
+  }
+  @media (max-width: 680px) {
+    .map-panel {
+      --route-sheet-height: min(68%, 560px);
+    }
+  }
+  @media (max-width: 680px) and (max-height: 760px) {
+    .map-panel {
+      --route-sheet-height: 64%;
+    }
   }
 }

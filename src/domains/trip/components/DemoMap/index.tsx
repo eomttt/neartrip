@@ -3,8 +3,10 @@ import type { RouteHighlight, RouteMapHandle } from '../../utils/route-highlight
 import { Button } from '@/common/design-system/components/Button';
 import { useImperativeHandle, useState, type Ref } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
-import { categoryLabels, type Category, type Itinerary, type Place } from '../../models/model-trip';
+import type { Category, Itinerary, Place } from '../../models/model-trip';
 import { distanceMeters, formatDistance } from '../../utils/route-order';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { categoryMessageKeys } from '../../i18n/trip-message-keys';
 
 const categoryPinColors: Record<Category, string> = {
   restaurant: '#bc725b',
@@ -43,6 +45,7 @@ export function DemoMap({
   onShowEntireRoute,
   onSelect,
 }: Props) {
+  const { t } = useI18n();
   const [zoom, setZoom] = useState(1);
   const [hoveredPlaceId, setHoveredPlaceId] = useState<string | null>(null);
   const [focus, setFocus] = useState<{
@@ -91,7 +94,7 @@ export function DemoMap({
         className="demo-canvas"
         viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
         role="group"
-        aria-label="성수동 예시 개략도. 실제 지도와 도로가 아닙니다."
+        aria-label={t('map.demoLabel')}
       >
         <defs>
           <pattern
@@ -184,7 +187,7 @@ export function DemoMap({
               key={highlight.request}
               className="demo-route-highlight"
               role="status"
-              aria-label={`${highlight.target.label} 이동 미리보기`}
+              aria-label={t('map.previewMoving', { label: highlight.target.label })}
             >
               {highlight.target.segments.map((segment, index) => (
                 <polyline
@@ -234,11 +237,11 @@ export function DemoMap({
                     className="demo-place-preview"
                     transform={`translate(0 ${p.y < 190 ? 50 : -142})`}
                     role="tooltip"
-                    aria-label={`${place.name} 장소 정보`}
+                    aria-label={t('map.preview', { name: place.name })}
                   >
                     <rect x="-124" width="248" height="112" rx="12" />
                     <text x="-108" y="24" className="demo-place-preview-category">
-                      {categoryLabels[place.category]}
+                      {t(categoryMessageKeys[place.category])}
                     </text>
                     <text x="-108" y="47" className="demo-place-preview-name">
                       {place.name}
@@ -247,7 +250,11 @@ export function DemoMap({
                       {place.address}
                     </text>
                     <text x="-108" y="94" className="demo-place-preview-meta">
-                      직선 {origin ? formatDistance(distanceMeters(origin, place)) : '거리 확인 중'}
+                      {origin
+                        ? t('place.straightDistance', {
+                            distance: formatDistance(distanceMeters(origin, place)),
+                          })
+                        : t('map.distanceLoading')}
                     </text>
                   </g>
                 ) : null}
@@ -256,7 +263,15 @@ export function DemoMap({
                   tabIndex={canToggle ? 0 : -1}
                   aria-disabled={!canToggle}
                   aria-pressed={canToggle ? index >= 0 : undefined}
-                  aria-label={`${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : index >= 0 ? ' 지도에서 빼기' : ' 지도에서 선택'}`}
+                  aria-label={
+                    isOrigin
+                      ? t(isDestination ? 'map.originDestination' : 'map.origin', {
+                          name: place.name,
+                        })
+                      : isDestination
+                        ? t('map.destination', { name: place.name })
+                        : t(index >= 0 ? 'map.remove' : 'map.select', { name: place.name })
+                  }
                   onClick={() => {
                     if (canToggle) onSelect(place);
                   }}
@@ -279,10 +294,10 @@ export function DemoMap({
                   >
                     {isOrigin
                       ? isDestination
-                        ? '왕복'
-                        : '출발'
+                        ? t('map.roundTrip')
+                        : t('map.start')
                       : isDestination
-                        ? '도착'
+                        ? t('map.end')
                         : index >= 0
                           ? index + 1
                           : categoryPinLabels[place.category]}
@@ -309,7 +324,7 @@ export function DemoMap({
         <Button
           variant="outline"
           size="icon"
-          aria-label="예시 지도 확대"
+          aria-label={t('map.demoZoomIn')}
           disabled={zoom >= 1.5}
           onClick={() => setZoom((current) => Math.min(1.5, current + 0.25))}
         >
@@ -318,7 +333,7 @@ export function DemoMap({
         <Button
           variant="outline"
           size="icon"
-          aria-label="예시 지도 축소"
+          aria-label={t('map.demoZoomOut')}
           disabled={zoom <= 0.75}
           onClick={() => setZoom((current) => Math.max(0.75, current - 0.25))}
         >
@@ -328,7 +343,7 @@ export function DemoMap({
           variant="outline"
           size="sm"
           className="map-overview-action h-9 w-auto px-3 text-xs"
-          aria-label={itinerary ? '전체 동선 보기' : '예시 지도 전체 보기'}
+          aria-label={itinerary ? t('map.fullRoute') : t('map.fullDemo')}
           onClick={() => {
             setZoom(1);
             setFocus(null);
@@ -336,10 +351,10 @@ export function DemoMap({
           }}
         >
           <Crosshair size={18} />
-          <span>{itinerary ? '전체 동선' : '전체 보기'}</span>
+          <span>{itinerary ? t('map.fullRouteText') : t('map.fullText')}</span>
         </Button>
       </div>
-      <span className="demo-watermark">예시 개략도 · 실제 지도와 경로가 아닙니다</span>
+      <span className="demo-watermark">{t('map.demoWatermark')}</span>
     </>
   );
 }

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 import { getRouteHighlight, type RouteMapHandle } from '@/domains/trip/utils/route-highlight';
 import type { Itinerary, Place } from '@/domains/trip/models/model-trip';
 import { tripQueries } from '@/domains/trip/queries/tripQueries';
@@ -19,19 +20,20 @@ import { MapPlaceFilters } from './components/MapPlaceFilters';
 import './style.css';
 
 export function TripPage() {
+  const { t } = useI18n();
   const config = useQuery(tripQueries.config());
   if (!config.data)
     return (
       <div className="app-loading">
         <span className="brand-logo">⌁</span>
-        <h1>가까이</h1>
+        <h1>{t('loading.brand')}</h1>
         {config.error ? (
           <>
-            <p role="alert">서버에 연결하지 못했어요. 앱이 실행 중인지 확인해주세요.</p>
-            <Button onClick={() => config.refetch()}>다시 연결하기</Button>
+            <p role="alert">{t('loading.serverError')}</p>
+            <Button onClick={() => config.refetch()}>{t('loading.retry')}</Button>
           </>
         ) : (
-          <p role="status">오늘의 작은 여행을 준비하고 있어요.</p>
+          <p role="status">{t('loading.preparing')}</p>
         )}
       </div>
     );
@@ -54,6 +56,7 @@ function Planner({
   initialOrigin: Place | null;
   configured: boolean;
 }) {
+  const { t } = useI18n();
   const planner = useTripPlanner(initialOrigin);
   const [activeView, setActiveView] = useState<'discover' | 'map'>('discover');
   const [routeDetailsOpen, setRouteDetailsOpen] = useState(false);
@@ -91,14 +94,14 @@ function Planner({
   return (
     <div className="app-shell">
       <TripHeader demo={demo} configured={configured} />
-      <nav className="trip-stepper" aria-label="여행 단계">
+      <nav className="trip-stepper" aria-label={t('steps.label')}>
         <ol>
           <li>
             <Button
               variant="ghost"
               className="h-auto w-full px-1 py-2"
               ref={discoverTab}
-              aria-label="1단계 출발·도착·주변 선택"
+              aria-label={t('steps.discoverLabel')}
               aria-current={activeView === 'discover' ? 'step' : undefined}
               aria-controls="discover-view"
               data-complete={!!planner.origin}
@@ -107,7 +110,7 @@ function Planner({
               <span className="step-number" aria-hidden="true">
                 1
               </span>
-              <span>출발·도착·주변 선택</span>
+              <span>{t('steps.discover')}</span>
             </Button>
           </li>
           <li>
@@ -115,7 +118,7 @@ function Planner({
               ref={mapTab}
               variant="ghost"
               className="h-auto w-full px-1 py-2"
-              aria-label="2단계 동선 보기"
+              aria-label={t('steps.routeLabel')}
               aria-current={activeView !== 'discover' ? 'step' : undefined}
               aria-controls="map-view"
               disabled={!planner.itinerary}
@@ -124,7 +127,7 @@ function Planner({
               <span className="step-number" aria-hidden="true">
                 2
               </span>
-              <span>동선 보기</span>
+              <span>{t('steps.route')}</span>
             </Button>
           </li>
         </ol>
@@ -133,7 +136,7 @@ function Planner({
         <aside
           id="discover-view"
           className="discover-panel"
-          aria-label="장소 찾기와 선택"
+          aria-label={t('discover.region')}
           aria-hidden={activeView !== 'discover'}
           inert={activeView !== 'discover'}
           data-active={activeView === 'discover'}
@@ -167,7 +170,7 @@ function Planner({
         <section
           id="map-view"
           className="map-panel"
-          aria-label="여행 지도"
+          aria-label={t('map.region')}
           aria-hidden={activeView !== 'map'}
           inert={activeView !== 'map'}
           data-active={activeView === 'map'}
@@ -234,12 +237,14 @@ function Planner({
           >
             {planner.isPlanning ? (
               <>
-                <span className="spinner" /> 길을 찾아보고 있어요
+                <span className="spinner" /> {t('plan.loading')}
               </>
             ) : (
               <>
-                <span>순서대로 동선 짜기</span>
-                {planner.selected.length > 0 ? <span>· {planner.selected.length}곳</span> : null}
+                <span>{t('plan.build')}</span>
+                {planner.selected.length > 0 ? (
+                  <span>{t('plan.placeCount', { count: planner.selected.length })}</span>
+                ) : null}
                 <ArrowRight size={17} />
               </>
             )}

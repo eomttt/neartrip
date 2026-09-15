@@ -3,6 +3,7 @@ import type { ComponentProps } from 'react';
 import { Route, Footprints } from 'lucide-react';
 import { DemoMap } from '../DemoMap';
 import { KakaoMap } from '../KakaoMap';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 
 type Props = ComponentProps<typeof KakaoMap> & { demo: boolean };
 export function TripMap({
@@ -16,6 +17,7 @@ export function TripMap({
   onShowEntireRoute,
   onSelect,
 }: Props) {
+  const { t } = useI18n();
   const MapComponent = demo ? DemoMap : KakaoMap;
   return (
     <>
@@ -31,24 +33,24 @@ export function TripMap({
       />
       <div className="map-top-label">
         <span className="live-dot" />
-        {origin ? `${origin.name} 주변` : '오늘은 어디로 떠날까요?'}
+        {origin ? t('map.around', { name: origin.name }) : t('map.question')}
         <span className="map-label-divider" />
-        {demo ? '예시 동네' : '카카오맵'}
+        {demo ? t('map.demoNeighborhood') : t('map.kakao')}
       </div>
       <div className="map-legend">
         <span>
           <i className="legend-food" />
-          맛집
+          {t('category.restaurant')}
         </span>
         <span>
           <i className="legend-cafe" />
-          카페
+          {t('category.cafe')}
         </span>
         <span>
-          <i className="legend-place" />갈 만한 곳
+          <i className="legend-place" /> {t('category.attraction')}
         </span>
         <span>
-          <i className="legend-bar" />술 한잔
+          <i className="legend-bar" /> {t('category.bar')}
         </span>
       </div>
       {!itinerary ? (
@@ -57,18 +59,14 @@ export function TripMap({
             <Route size={22} />
           </span>
           <div>
-            <strong>좋아하는 곳을 점으로, 하루를 선으로.</strong>
-            <p>목록이나 지도에서 장소를 담아 동선을 만들어보세요.</p>
+            <strong>{t('map.noteTitle')}</strong>
+            <p>{t('map.noteDescription')}</p>
           </div>
         </div>
       ) : (
         <div className="map-note compact">
           <Footprints size={18} />
-          <strong>
-            {itinerary.demo
-              ? '점선은 예시 방문 순서예요.'
-              : '도보는 실선, 대중교통은 점선으로 표시해요.'}
-          </strong>
+          <strong>{itinerary.demo ? t('map.demoRoute') : t('map.routeLegend')}</strong>
         </div>
       )}
     </>

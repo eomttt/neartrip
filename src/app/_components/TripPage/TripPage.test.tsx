@@ -7,6 +7,8 @@ import type { Server } from 'node:http';
 import { createTestServer } from '../../../../server/test-server';
 import { demoOrigin } from '../../../../server/demo';
 import { TripPage } from '.';
+import { I18nProvider } from '@/common/i18n/components/I18nProvider';
+import type { Locale } from '@/common/i18n/locale';
 
 const nativeFetch = globalThis.fetch;
 let server: Server;
@@ -47,12 +49,14 @@ afterAll(async () => {
   );
 });
 
-async function setup(hasOrigin = true) {
+async function setup(hasOrigin = true, initialLocale: Locale = 'ko') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const user = userEvent.setup();
   render(
     <QueryClientProvider client={client}>
-      <TripPage />
+      <I18nProvider initialLocale={initialLocale}>
+        <TripPage />
+      </I18nProvider>
     </QueryClientProvider>,
   );
   if (hasOrigin) await screen.findByRole('button', { name: '작은 식탁 담기' });
@@ -117,6 +121,21 @@ async function chooseDestination(user: ReturnType<typeof userEvent.setup>, name:
 }
 
 describe('두 단계 여행 화면과 예시 API 연결', () => {
+  it('언어를 바꿔도 담은 장소를 유지하고 주소와 문구를 함께 바꾼다', async () => {
+    const user = await setup();
+    await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));
+
+    await user.click(screen.getByRole('button', { name: '영어로 보기' }));
+
+    expect(document.documentElement.lang).toBe('en');
+    expect(window.location.pathname).toBe('/en');
+    expect(screen.getByRole('button', { name: 'Remove 작은 식탁' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Selected 1 / 5 · Change order' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'View in Korean' }));
+    expect(screen.getByRole('button', { name: '작은 식탁 빼기' })).toBeTruthy();
+  });
+
   it('혼잡도 조회가 실패해도 장소를 담고 동선을 만들 수 있다', async () => {
     const currentFetch = globalThis.fetch;
     const crowdedFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {

@@ -1,7 +1,8 @@
 import './style.css';
 import { useState } from 'react';
-import { Compass, Info } from 'lucide-react';
+import { Compass, Globe2, Info } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 import {
   Dialog,
   DialogTrigger,
@@ -18,64 +19,65 @@ interface Props {
   configured: boolean;
 }
 export function TripHeader({ demo, configured }: Props) {
+  const { locale, setLocale, t } = useI18n();
   const [showHelp, setShowHelp] = useState(false);
   return (
     <>
       <header className="app-header">
-        <a href="/" className="brand" aria-label="가까이 홈">
+        <a href={`/${locale}`} className="brand" aria-label={t('brand.home')}>
           <span className="brand-logo">⌁</span>
-          <span>
-            가까이<small>neartrip</small>
-          </span>
+          <span>{t('brand.name')}</span>
         </a>
-        <span className="header-tagline">멀리 떠나지 않아도, 여행</span>
-        <Dialog open={showHelp} onOpenChange={setShowHelp}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="help-button">
-              <Compass size={16} /> 이용 방법
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="pr-5 leading-relaxed">
-                장소 하나에서 시작하는 작은 여행
-              </DialogTitle>
-              <DialogDescription className="leading-relaxed">
-                여행 중 묵는 숙소를 검색해보세요. 근처에서 마음에 드는 곳을 5곳까지 담으면 오늘의
-                동선을 만들어요.
-              </DialogDescription>
-            </DialogHeader>
-            <ol className="list-decimal space-y-3 pl-5 text-sm leading-relaxed">
-              <li>숙소를 출발점으로 정하고 맛집·카페·가볼 만한 곳·술집을 골라요.</li>
-              <li>숙소로 돌아오는 동선이 기본이에요. 마지막 도착점은 따로 정할 수도 있어요.</li>
-              <li>
-                동선을 만들면 2단계 지도에서 확인해요. 이동 안내를 누르면 구간을 살펴볼 수 있어요.
-              </li>
-            </ol>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              도착점을 선택하면 그곳에서 여행을 마치고, 비워두면 출발점으로 돌아와요.
-              날짜·영업시간·체류시간은 포함되지 않아요.
-            </p>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button>여행 시작하기</Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <span className="header-tagline">{t('brand.tagline')}</span>
+        <div className="header-actions">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="language-button"
+            aria-label={t('language.switchLabel')}
+            onClick={() => setLocale(locale === 'ko' ? 'en' : 'ko')}
+          >
+            <Globe2 size={15} /> {t('language.switch')}
+          </Button>
+          <Dialog open={showHelp} onOpenChange={setShowHelp}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="help-button">
+                <Compass size={16} /> {t('help.button')}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="pr-5 leading-relaxed">{t('help.title')}</DialogTitle>
+                <DialogDescription className="leading-relaxed">
+                  {t('help.description')}
+                </DialogDescription>
+              </DialogHeader>
+              <ol className="list-decimal space-y-3 pl-5 text-sm leading-relaxed">
+                <li>{t('help.step1')}</li>
+                <li>{t('help.step2')}</li>
+                <li>{t('help.step3')}</li>
+              </ol>
+              <p className="text-xs leading-relaxed text-muted-foreground">{t('help.note')}</p>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button>{t('help.start')}</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </header>
       {demo ? (
         <div className="demo-banner">
           <Info size={14} />
           <span>
-            <strong>예시로 둘러보는 중</strong> 가상의 맛집·카페·술집과 개략도로 체험해보세요. 실제
-            장소 검색은 카카오 키 연결 후 사용할 수 있어요.
+            <strong>{t('demo.title')}</strong> {t('demo.description')}
           </span>
         </div>
       ) : !configured ? (
         <div className="demo-banner" role="alert">
           <Info size={14} />
-          카카오 키 설정이 일부 빠져 있어요. .env.local의 REST 키와 JavaScript 키를 확인해주세요.
+          {t('config.missing')}
         </div>
       ) : null}
     </>

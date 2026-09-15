@@ -16,6 +16,7 @@ import {
   type PlaceFilterProps,
   type PlaceRadiusSelectProps,
 } from '@/domains/trip/components/PlaceFilters';
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 
 type Props = PlaceFilterProps &
   Omit<PlaceRadiusSelectProps, 'id'> & {
@@ -24,13 +25,18 @@ type Props = PlaceFilterProps &
   };
 
 export function MapPlaceFilters({ placeCount, selectedCount, ...filters }: Props) {
+  const { t } = useI18n();
   return (
     <Dialog>
       <div className="map-filter-action">
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" aria-label={`장소 필터 ${placeCount}곳`}>
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label={t('map.filterCount', { count: placeCount })}
+          >
             <SlidersHorizontal size={15} />
-            필터
+            {t('filters.button')}
             <span>{placeCount}</span>
           </Button>
         </DialogTrigger>
@@ -38,10 +44,8 @@ export function MapPlaceFilters({ placeCount, selectedCount, ...filters }: Props
       <DialogContent placement="bottom" className="map-filter-sheet">
         <div className="map-filter-heading">
           <div>
-            <DialogTitle>지도에 표시할 장소</DialogTitle>
-            <DialogDescription>
-              필터를 바꾸면 지도 마커가 바로 바뀌어요. 마커를 눌러 방문지를 추가하세요.
-            </DialogDescription>
+            <DialogTitle>{t('map.filtersTitle')}</DialogTitle>
+            <DialogDescription>{t('map.filtersDescription')}</DialogDescription>
           </div>
           <PlaceRadiusSelect
             id="map-search-radius"
@@ -52,12 +56,12 @@ export function MapPlaceFilters({ placeCount, selectedCount, ...filters }: Props
         </div>
         <PlaceFilters {...filters} />
         <div className="map-filter-status" aria-live="polite">
-          <span>지도에 {placeCount}곳 표시</span>
-          <span>담은 장소 {selectedCount} / 5</span>
+          <span>{t('map.displayed', { count: placeCount })}</span>
+          <span>{t('map.selected', { count: selectedCount })}</span>
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button className="w-full">지도에서 보기</Button>
+            <Button className="w-full">{t('map.view')}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

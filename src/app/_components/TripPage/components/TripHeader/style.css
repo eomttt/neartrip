@@ -57,6 +57,16 @@
     border: 1px solid var(--border);
     border-radius: 8px;
   }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .language-button {
+    gap: 5px;
+    padding-inline: 9px;
+    font-size: 11px;
+  }
   .help-button:hover {
     background: var(--sage);
   }
@@ -103,6 +113,9 @@
     .help-button {
       font-size: 11px;
       padding: 8px;
+    }
+    .help-button svg {
+      display: none;
     }
     .demo-banner {
       font-size: 10px;

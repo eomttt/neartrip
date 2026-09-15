@@ -15,6 +15,25 @@ const categoryPinLabels: Record<Category, string> = {
   bar: 'B',
 };
 
+function fitMapBounds(
+  currentMap: kakao.maps.Map,
+  targetBounds: kakao.maps.LatLngBounds,
+  element: HTMLElement | null,
+) {
+  const verticalInset = Math.min(65, Math.max(24, Math.round((element?.clientHeight ?? 650) / 10)));
+  const horizontalInset = Math.min(
+    85,
+    Math.max(24, Math.round((element?.clientWidth ?? 650) / 10)),
+  );
+  currentMap.setBounds(
+    targetBounds,
+    verticalInset,
+    horizontalInset,
+    verticalInset,
+    horizontalInset,
+  );
+}
+
 function createMapPlacePreview(place: Place, origin: Place | null, id: string): HTMLElement {
   const preview = document.createElement('article');
   preview.id = id;
@@ -58,6 +77,7 @@ interface Props {
   places: Place[];
   selected: Place[];
   itinerary: Itinerary | null;
+  onShowEntireRoute: () => void;
   onSelect: (place: Place) => void;
 }
 
@@ -68,11 +88,18 @@ export function KakaoMap({
   places,
   selected,
   itinerary,
+  onShowEntireRoute,
   onSelect,
 }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<kakao.maps.Map | null>(null);
   const bounds = useRef<kakao.maps.LatLngBounds | null>(null);
+  const lastFramed = useRef<{
+    origin: Place | null;
+    destination: Place | null;
+    itinerary: Itinerary | null;
+  } | null>(null);
+  const activeBounds = useRef<kakao.maps.LatLngBounds | null>(null);
   const clearHighlight = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
@@ -84,6 +111,7 @@ export function KakaoMap({
         const currentMap = map.current;
         if (!ready || !currentMap) return;
         clearHighlight.current();
+        activeBounds.current = null;
         const focusBounds = new kakao.maps.LatLngBounds();
         const highlightColor = getComputedStyle(container.current ?? document.documentElement)
           .getPropertyValue('--route-highlight')
@@ -126,7 +154,8 @@ export function KakaoMap({
           yAnchor: 0.5,
           zIndex: 11,
         });
-        currentMap.setBounds(focusBounds, 100, 70, 110, 70);
+        activeBounds.current = focusBounds;
+        fitMapBounds(currentMap, focusBounds, container.current);
         const stopPlayback = playRoute(highlight.segments, (position) => {
           overlay.setPosition(new kakao.maps.LatLng(position.lat, position.lng));
         });
@@ -173,12 +202,17 @@ export function KakaoMap({
       const center = currentMap.getCenter();
       const level = currentMap.getLevel();
       currentMap.relayout();
+      const routeBounds = activeBounds.current ?? bounds.current;
+      if (itinerary && routeBounds) {
+        fitMapBounds(currentMap, routeBounds, element);
+        return;
+      }
       currentMap.setLevel(level, { animate: false, anchor: center });
       currentMap.setCenter(center);
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [ready]);
+  }, [ready, itinerary]);
 
   useEffect(() => {
     const currentMap = map.current;
@@ -199,7 +233,7 @@ export function KakaoMap({
       const isOrigin = origin?.id === place.id;
       const isDestination = destination?.id === place.id;
       const index = selected.findIndex((item) => item.id === place.id);
-      const canSelect = !isOrigin && !isDestination && index < 0;
+      const canToggle = !isOrigin && !isDestination;
       const marker = document.createElement('div');
       marker.className = 'map-place-marker';
       const pin = document.createElement('button');
@@ -215,17 +249,18 @@ export function KakaoMap({
             : categoryPinLabels[place.category];
       pin.setAttribute(
         'aria-label',
-        `${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : index >= 0 ? ' 선택됨' : ' 선택'}`,
+        `${place.name}${isOrigin ? (isDestination ? ' 출발점 · 도착점' : ' 출발점') : isDestination ? ' 도착점' : index >= 0 ? ' 지도에서 빼기' : ' 지도에서 선택'}`,
       );
-      pin.setAttribute('aria-disabled', String(!canSelect));
+      pin.setAttribute('aria-disabled', String(!canToggle));
+      if (canToggle) pin.setAttribute('aria-pressed', String(index >= 0));
       pin.title = place.name;
       const previewId = `map-place-preview-${markerIndex}`;
       markerIndex += 1;
       pin.setAttribute('aria-describedby', previewId);
-      if (canSelect) pin.onclick = () => handlePlaceSelect(place);
+      if (canToggle) pin.onclick = () => handlePlaceSelect(place);
       marker.append(pin, createMapPlacePreview(place, origin, previewId));
       const position = new kakao.maps.LatLng(place.lat, place.lng);
-      viewBounds.extend(position);
+      if (!itinerary || isOrigin || isDestination || index >= 0) viewBounds.extend(position);
       const zIndex = isOrigin || isDestination ? 5 : index >= 0 ? 4 : 3;
       const overlay = new kakao.maps.CustomOverlay({
         map: currentMap,
@@ -255,10 +290,20 @@ export function KakaoMap({
     }
     if (!viewBounds.isEmpty()) {
       bounds.current = viewBounds;
-      currentMap.setBounds(viewBounds, 85, 65, 90, 65);
+      const previousFrame = lastFramed.current;
+      if (
+        !previousFrame ||
+        previousFrame.origin !== origin ||
+        previousFrame.destination !== (destination ?? null) ||
+        (itinerary !== null && previousFrame.itinerary !== itinerary)
+      ) {
+        fitMapBounds(currentMap, viewBounds, container.current);
+      }
+      lastFramed.current = { origin, destination: destination ?? null, itinerary };
     }
     return () => {
       clearHighlight.current();
+      activeBounds.current = null;
       overlays.forEach((overlay) => overlay.setMap(null));
       lines.forEach((line) => line.setMap(null));
     };
@@ -303,14 +348,19 @@ export function KakaoMap({
         </Button>
         <Button
           variant="outline"
-          size="icon"
+          size="sm"
+          className="map-overview-action h-9 w-auto px-3 text-xs"
           aria-label="전체 동선 보기"
           onClick={() => {
             clearHighlight.current();
-            if (bounds.current) map.current?.setBounds(bounds.current, 85, 65, 90, 65);
+            activeBounds.current = null;
+            if (bounds.current && map.current)
+              fitMapBounds(map.current, bounds.current, container.current);
+            onShowEntireRoute();
           }}
         >
           <Crosshair size={18} />
+          <span>{itinerary ? '전체 동선' : '전체 보기'}</span>
         </Button>
       </div>
     </>

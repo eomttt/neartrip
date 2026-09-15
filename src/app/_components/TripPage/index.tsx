@@ -56,6 +56,7 @@ function Planner({
 }) {
   const planner = useTripPlanner(initialOrigin);
   const [activeView, setActiveView] = useState<'discover' | 'map'>('discover');
+  const [routeDetailsOpen, setRouteDetailsOpen] = useState(false);
   const discoverTab = useRef<HTMLButtonElement>(null);
   const mapTab = useRef<HTMLButtonElement>(null);
   const routeMap = useRef<RouteMapHandle>(null);
@@ -82,6 +83,7 @@ function Planner({
     const result = await planner.buildPlan();
     if (result) {
       setActiveView('map');
+      setRouteDetailsOpen(true);
       mapTab.current?.focus();
     }
   }
@@ -169,6 +171,7 @@ function Planner({
           aria-hidden={activeView !== 'map'}
           inert={activeView !== 'map'}
           data-active={activeView === 'map'}
+          data-route-details={routeDetailsOpen}
         >
           <TripMap
             ref={routeMap}
@@ -178,10 +181,8 @@ function Planner({
             places={mapPlaces}
             selected={planner.selected}
             itinerary={planner.itinerary}
-            onSelect={(place) => {
-              if (planner.selected.some((item) => item.id === place.id)) return;
-              planner.togglePlace(place);
-            }}
+            onShowEntireRoute={() => setFocusedRoute(null)}
+            onSelect={planner.togglePlace}
           />
           <MapPlaceFilters
             categories={nearby.categories}
@@ -201,14 +202,17 @@ function Planner({
             origin={planner.origin}
             destination={planner.destination}
             itinerary={planner.itinerary}
+            selected={planner.selected}
             activeRoute={activeRoute}
+            isOpen={routeDetailsOpen}
             isPlanning={planner.isPlanning}
+            onOpenChange={setRouteDetailsOpen}
             onFocusRoute={handleRouteFocus}
-            onEdit={() => setActiveView('discover')}
-            onRebuild={handleBuildPlan}
-            onReturnFocus={(target) => {
-              (target === 'map' ? mapTab : discoverTab).current?.focus({ preventScroll: true });
+            onEdit={() => {
+              setActiveView('discover');
+              discoverTab.current?.focus({ preventScroll: true });
             }}
+            onRebuild={handleBuildPlan}
           />
         </section>
       </main>

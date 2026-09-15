@@ -2,7 +2,7 @@
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { KakaoMap } from '.';
-import { demoOrigin } from '../../../../../server/demo';
+import { demoOrigin, demoPlaces } from '../../../../../server/demo';
 
 vi.mock('../../../../common/maps/kakao-loader', () => ({
   loadKakaoMap: vi.fn().mockResolvedValue(undefined),
@@ -14,7 +14,9 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-it('목록을 펼쳐 지도 크기가 바뀌어도 현재 중심과 확대 수준을 유지한다', async () => {
+it('지도 크기가 바뀌거나 장소를 담아도 현재 확대 상태를 유지한다', async () => {
+  const place = demoPlaces[0];
+  if (!place) throw new Error('예시 장소 없음');
   let resize: (() => void) | undefined;
   const center = { lat: 37.56, lng: 127.08 };
   const getCenter = vi.fn().mockReturnValue(center);
@@ -23,6 +25,7 @@ it('목록을 펼쳐 지도 크기가 바뀌어도 현재 중심과 확대 수�
   const setBounds = vi.fn();
   const setLevel = vi.fn();
   const getLevel = vi.fn().mockReturnValue(4);
+  const overlayContents: HTMLElement[] = [];
   vi.stubEnv('NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY', 'test-only-key');
   vi.stubGlobal(
     'ResizeObserver',
@@ -57,12 +60,24 @@ it('목록을 펼쳐 지도 크기가 바뀌어도 현재 중심과 확대 수�
         }
       },
       CustomOverlay: class {
+        constructor({ content }: { content: HTMLElement }) {
+          overlayContents.push(content);
+        }
         setMap() {}
       },
     },
   });
-  render(
-    <KakaoMap origin={demoOrigin} places={[]} selected={[]} itinerary={null} onSelect={vi.fn()} />,
+  const onShowEntireRoute = vi.fn();
+  const onSelect = vi.fn();
+  const { rerender } = render(
+    <KakaoMap
+      origin={demoOrigin}
+      places={[place]}
+      selected={[]}
+      itinerary={null}
+      onShowEntireRoute={onShowEntireRoute}
+      onSelect={onSelect}
+    />,
   );
   await waitFor(() => expect(resize).toBeDefined());
   expect(setBounds).toHaveBeenCalled();
@@ -80,4 +95,22 @@ it('목록을 펼쳐 지도 크기가 바뀌어도 현재 중심과 확대 수�
   act(() => resize?.());
   expect(setCenter).toHaveBeenLastCalledWith(pannedCenter);
   expect(setBounds).not.toHaveBeenCalled();
+  rerender(
+    <KakaoMap
+      origin={demoOrigin}
+      places={[place]}
+      selected={[place]}
+      itinerary={null}
+      onShowEntireRoute={onShowEntireRoute}
+      onSelect={onSelect}
+    />,
+  );
+  expect(setBounds).not.toHaveBeenCalled();
+  const selectedPin = overlayContents
+    .flatMap((content) => [...content.querySelectorAll('button')])
+    .find((pin) => pin.getAttribute('aria-label') === `${place.name} 지도에서 빼기`);
+  if (!selectedPin) throw new Error('선택된 장소 마커 없음');
+  expect(selectedPin.getAttribute('aria-pressed')).toBe('true');
+  act(() => selectedPin.click());
+  expect(onSelect).toHaveBeenCalledWith(place);
 });

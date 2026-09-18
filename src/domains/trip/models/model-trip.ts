@@ -29,8 +29,10 @@ export const placeSchema = coordinateSchema.extend({
 });
 export type Place = z.infer<typeof placeSchema>;
 export type Coordinate = z.infer<typeof coordinateSchema>;
+export const travelModeSchema = z.enum(['local', 'driving']);
+export type TravelMode = z.infer<typeof travelModeSchema>;
 export const segmentSchema = z.object({
-  mode: z.enum(['walk', 'bus', 'subway']),
+  mode: z.enum(['walk', 'bus', 'subway', 'car']),
   seconds: z.number().nonnegative(),
   meters: z.number().nonnegative(),
   points: z.array(coordinateSchema),
@@ -41,6 +43,7 @@ export type Segment = z.infer<typeof segmentSchema>;
 export const legSchema = z.object({
   from: placeSchema,
   to: placeSchema,
+  travelMode: travelModeSchema.optional(),
   segments: z.array(segmentSchema),
   warning: z.string().nullable(),
 });
@@ -57,6 +60,7 @@ export const planRequestSchema = z
     destination: placeSchema.nullish(),
     places: z.array(placeSchema).max(5),
     order: z.enum(['nearby', 'manual']).default('nearby'),
+    travelMode: travelModeSchema.default('local'),
   })
   .superRefine(({ origin, destination, places }, ctx) => {
     if (places.length === 0 && !destination) {

@@ -357,7 +357,6 @@
   }
   .app-shell {
     width: 100%;
-    max-width: 680px;
     height: 100dvh;
     min-height: 0;
     margin-inline: auto;
@@ -585,6 +584,75 @@
     flex-shrink: 0;
     background: var(--background);
     border-top: 1px solid var(--border);
+    margin-inline: -20px;
+  }
+  .trip-travel-options {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .trip-travel-options p {
+    color: var(--muted-foreground);
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .trip-stepper[hidden] {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .app-shell {
+      border-inline: 0;
+    }
+    .app-shell .app-header {
+      padding-inline: 28px;
+    }
+    .app-shell .planner-layout {
+      grid-template-columns: clamp(360px, 30vw, 460px) minmax(0, 1fr);
+    }
+    .planner-layout .discover-panel {
+      grid-area: 1 / 1;
+      border-right: 1px solid var(--border);
+      padding-top: 20px;
+    }
+    .planner-layout .map-panel {
+      grid-area: 1 / 2;
+    }
+    .map-panel:not([data-route-details='true']) .map-controls {
+      bottom: 24px;
+    }
+  }
+  @media (min-width: 1440px) {
+    .map-panel {
+      --route-sheet-width: 380px;
+    }
+    .map-panel .route-sheet {
+      inset: 16px 16px auto auto;
+      width: var(--route-sheet-width);
+      height: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+    }
+    .map-panel .route-sheet[data-open='true'] {
+      height: calc(100% - 32px);
+    }
+    .map-panel[data-route-details='true'] .demo-canvas,
+    .map-panel[data-route-details='true'] .kakao-canvas {
+      width: calc(100% - var(--route-sheet-width) - 32px);
+      height: 100%;
+    }
+    .map-panel[data-route-details='true'] .map-controls {
+      right: calc(var(--route-sheet-width) + 48px);
+      bottom: 24px;
+    }
+    .map-panel[data-route-details='true'] .map-filter-action {
+      right: calc(var(--route-sheet-width) + 48px);
+    }
+    .map-panel[data-route-details='true'] .map-top-label {
+      max-width: calc(100% - var(--route-sheet-width) - 64px);
+    }
+    .map-panel[data-route-details='true'] .demo-watermark {
+      left: calc((100% - var(--route-sheet-width) - 32px) / 2);
+    }
   }
   @media (max-width: 680px) {
     .app-shell .app-header {

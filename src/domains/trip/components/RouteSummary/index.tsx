@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 import { Button } from '@/common/design-system/components/Button';
 import {
   Bus,
+  Car,
   ExternalLink,
   CircleCheck,
   ChevronDown,
@@ -86,6 +87,9 @@ export function RouteSummary({
             {formatDistance(totalMeters)}
             {itinerary.demo ? ` ${t('route.estimate')}` : ''}
           </p>
+          {!itinerary.demo && itinerary.legs.some((leg) => leg.travelMode === 'driving') ? (
+            <p className="text-xs text-muted-foreground">{t('travel.drivingTime')}</p>
+          ) : null}
           <h3 className="route-details-title">{t('route.legs')}</h3>
           <div
             className="route-details-scroll"
@@ -210,6 +214,8 @@ export function RouteSummary({
                         >
                           {segment.mode === 'walk' ? (
                             <Footprints size={13} />
+                          ) : segment.mode === 'car' ? (
+                            <Car size={13} />
                           ) : segment.mode === 'bus' ? (
                             <Bus size={13} />
                           ) : (
@@ -221,7 +227,7 @@ export function RouteSummary({
                               {t('route.minutes', {
                                 count: Math.max(1, Math.ceil(segment.seconds / 60)),
                               })}
-                              {segment.mode !== 'walk'
+                              {segment.mode === 'bus' || segment.mode === 'subway'
                                 ? ` ${t('route.stops', { count: segment.stops ?? '?' })}`
                                 : ''}
                             </small>

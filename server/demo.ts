@@ -1,4 +1,4 @@
-import type { Category, Leg, Place } from '../src/domains/trip/models/model-trip';
+import type { Category, Leg, Place, TravelMode } from '../src/domains/trip/models/model-trip';
 import { distanceMeters } from '../src/domains/trip/utils/route-order';
 
 export const demoOrigin: Place = {
@@ -115,17 +115,18 @@ export function nearbyDemo(origin: Place, category: Category | undefined, radius
     .toSorted((a, b) => distanceMeters(origin, a) - distanceMeters(origin, b));
 }
 
-export function createDemoLeg(from: Place, to: Place): Leg {
+export function createDemoLeg(from: Place, to: Place, travelMode: TravelMode = 'local'): Leg {
   const meters = Math.round(distanceMeters(from, to) * 1.25);
   return {
     from,
     to,
+    travelMode,
     warning: null,
     segments: [
       {
-        mode: 'walk',
+        mode: travelMode === 'driving' ? 'car' : 'walk',
         meters,
-        seconds: Math.round(meters / 1.2),
+        seconds: Math.round(meters / (travelMode === 'driving' ? 8.3 : 1.2)),
         stops: 0,
         instruction: '예시 이동 · 실제 길찾기가 아닙니다',
         points: [from, to],

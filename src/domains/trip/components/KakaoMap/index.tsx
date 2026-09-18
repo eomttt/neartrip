@@ -139,7 +139,8 @@ export function KakaoMap({
               strokeWeight: 9,
               strokeColor: highlightColor,
               strokeOpacity: 0.95,
-              strokeStyle: segment.mode === 'walk' ? 'solid' : 'shortdash',
+              strokeStyle:
+                segment.mode === 'walk' || segment.mode === 'car' ? 'solid' : 'shortdash',
               zIndex: 10,
             });
           });
@@ -300,9 +301,13 @@ export function KakaoMap({
             path,
             strokeWeight: 5,
             strokeColor:
-              segment.mode === 'walk' ? '#245d46' : segment.mode === 'bus' ? '#b66b3d' : '#4264af',
+              segment.mode === 'walk' || segment.mode === 'car'
+                ? '#245d46'
+                : segment.mode === 'bus'
+                  ? '#b66b3d'
+                  : '#4264af',
             strokeOpacity: 0.9,
-            strokeStyle: segment.mode === 'walk' ? 'solid' : 'shortdash',
+            strokeStyle: segment.mode === 'walk' || segment.mode === 'car' ? 'solid' : 'shortdash',
           }),
         );
       }

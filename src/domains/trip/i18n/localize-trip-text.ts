@@ -1,6 +1,11 @@
 import type { Locale } from '@/common/i18n/locale';
 
 const englishMessages = new Map<string, string>([
+  ['차량·택시로 이동', 'Travel by car or taxi'],
+  [
+    '차량 경로를 찾지 못했어요. 길찾기 앱에서 확인해주세요.',
+    'No driving route was found. Check a directions app.',
+  ],
   [
     '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
     'Too many requests. Please try again shortly.',

@@ -16,6 +16,11 @@ let baseUrl: string;
 let testClient = 0;
 beforeEach(() => {
   testClient += 1;
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }));
 });
 
 beforeAll(async () => {
@@ -81,7 +86,11 @@ async function openSelected(user: ReturnType<typeof userEvent.setup>) {
 }
 
 async function openNearbyFilters(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /장소 필터/ }));
+  await user.click(
+    within(screen.getByRole('region', { name: '오늘 들러볼 곳' })).getByRole('button', {
+      name: /장소 필터/,
+    }),
+  );
   return screen.getByRole('dialog', { name: '장소 필터' });
 }
 
@@ -121,6 +130,70 @@ async function chooseDestination(user: ReturnType<typeof userEvent.setup>, name:
 }
 
 describe('두 단계 여행 화면과 예시 API 연결', () => {
+  it('PC는 지도와 목록을 함께 열고 10km에서 차량 동선을 만든다', async () => {
+    let desktop = true;
+    const listeners = new Set<() => void>();
+    vi.stubGlobal('matchMedia', () => ({
+      matches: desktop,
+      addEventListener: (_event: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_event: string, listener: () => void) => listeners.delete(listener),
+    }));
+    const user = await setup();
+    expect(screen.getByRole('region', { name: '여행 지도' })).toBeTruthy();
+    expect(screen.getByRole('complementary', { name: '장소 찾기와 선택' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '차량·택시' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    const filters = await openNearbyFilters(user);
+    expect(within(filters).getByRole('combobox', { name: '검색 반경' }).getAttribute('id')).toBe(
+      'search-radius',
+    );
+    expect(within(filters).getByRole('option', { name: '반경 10km', selected: true })).toBeTruthy();
+    await user.selectOptions(within(filters).getByRole('combobox', { name: '검색 반경' }), '20000');
+    await user.click(within(filters).getByRole('button', { name: '이번 주 행사' }));
+    await user.click(within(filters).getByRole('button', { name: '반려견 동반' }));
+    expect(within(filters).getByRole('option', { name: '반경 20km', selected: true })).toBeTruthy();
+    await user.click(within(filters).getByRole('button', { name: '반려견 동반' }));
+    await closeNearbyFilters(user);
+    await user.click(await screen.findByRole('button', { name: '작은 식탁 담기' }));
+    await user.click(screen.getByRole('button', { name: /^순서대로 동선 짜기/ }));
+    await screen.findByRole('region', { name: '구간별 이동 안내' });
+    expect(screen.getByRole('complementary', { name: '장소 찾기와 선택' })).toBeTruthy();
+    expect(screen.queryByText(/정거장/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: '도보·대중교통' }));
+    expect(screen.queryByRole('region', { name: '구간별 이동 안내' })).toBeNull();
+    expect(screen.getByText(/담은 장소 1 \/ 5/)).toBeTruthy();
+
+    act(() => {
+      desktop = false;
+      listeners.forEach((listener) => listener());
+    });
+    await editPlaces(user);
+    expect(screen.queryByRole('region', { name: '여행 지도' })).toBeNull();
+    expect(screen.getByRole('button', { name: '도보·대중교통' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    const mobileFilters = await openNearbyFilters(user);
+    expect(
+      within(mobileFilters).getByRole('option', { name: '반경 20km', selected: true }),
+    ).toBeTruthy();
+  });
+
+  it('모바일은 1km와 도보·대중교통으로 시작하고 차량 이동도 선택할 수 있다', async () => {
+    const user = await setup();
+    expect(screen.queryByRole('region', { name: '여행 지도' })).toBeNull();
+    expect(screen.getByRole('button', { name: '도보·대중교통' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    const filters = await openNearbyFilters(user);
+    expect(within(filters).getByRole('option', { name: '반경 1km', selected: true })).toBeTruthy();
+    await closeNearbyFilters(user);
+    await user.click(screen.getByRole('button', { name: '차량·택시' }));
+    await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));
+    await build(user);
+    expect(screen.queryByText(/정거장/)).toBeNull();
+  });
+
   it('언어를 바꿔도 담은 장소를 유지하고 주소와 문구를 함께 바꾼다', async () => {
     const user = await setup();
     await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));

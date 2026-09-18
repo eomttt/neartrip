@@ -31,7 +31,7 @@ export async function findNearbyPlaces(params: URLSearchParams) {
       lat: z.coerce.number().min(32).max(39.5),
       lng: z.coerce.number().min(124).max(132),
       category: categorySchema.optional(),
-      radius: z.coerce.number().int().min(300).max(3_000),
+      radius: z.coerce.number().int().min(300).max(20_000),
     })
     .parse(Object.fromEntries(params));
   if (getTripConfig().demo) return nearbyDemo({ ...demoOrigin, lat, lng }, category, radius);
@@ -43,7 +43,7 @@ export async function findNearbyPlaces(params: URLSearchParams) {
 }
 
 export async function buildTripPlan(input: unknown) {
-  const { origin, destination, places, order } = planRequestSchema.parse(input);
+  const { origin, destination, places, order, travelMode } = planRequestSchema.parse(input);
   const demo = getTripConfig().demo;
   const ordered =
     order === 'nearby' ? orderRoundTrip(origin, places, destination ?? origin) : places;
@@ -61,7 +61,7 @@ export async function buildTripPlan(input: unknown) {
           .slice(index, index + 3)
           .map(({ from, to }, offset) =>
             withTraceLeg(index + offset + 1, async () =>
-              demo ? createDemoLeg(from, to) : getLeg(from, to),
+              demo ? createDemoLeg(from, to, travelMode) : getLeg(from, to, travelMode),
             ),
           ),
       )),

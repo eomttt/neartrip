@@ -50,7 +50,6 @@ export function MapPlaceFilters({ placeCount, selectedCount, ...filters }: Props
           <PlaceRadiusSelect
             id="map-search-radius"
             radius={filters.radius}
-            festivalOnly={filters.festivalOnly}
             onRadiusChange={filters.onRadiusChange}
           />
         </div>

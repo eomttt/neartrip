@@ -28,16 +28,10 @@ export interface PlaceFilterProps {
 export interface PlaceRadiusSelectProps {
   id: string;
   radius: number;
-  festivalOnly: boolean;
   onRadiusChange: (radius: number) => void;
 }
 
-export function PlaceRadiusSelect({
-  id,
-  radius,
-  festivalOnly,
-  onRadiusChange,
-}: PlaceRadiusSelectProps) {
+export function PlaceRadiusSelect({ id, radius, onRadiusChange }: PlaceRadiusSelectProps) {
   const { t } = useI18n();
   function radiusLabel(distance: string) {
     return t('filters.radiusOption', { distance });
@@ -58,13 +52,9 @@ export function PlaceRadiusSelect({
         <NativeSelectOption value={1000}>{radiusLabel('1km')}</NativeSelectOption>
         <NativeSelectOption value={2000}>{radiusLabel('2km')}</NativeSelectOption>
         <NativeSelectOption value={3000}>{radiusLabel('3km')}</NativeSelectOption>
-        {festivalOnly ? (
-          <>
-            <NativeSelectOption value={5000}>{radiusLabel('5km')}</NativeSelectOption>
-            <NativeSelectOption value={10000}>{radiusLabel('10km')}</NativeSelectOption>
-            <NativeSelectOption value={20000}>{radiusLabel('20km')}</NativeSelectOption>
-          </>
-        ) : null}
+        <NativeSelectOption value={5000}>{radiusLabel('5km')}</NativeSelectOption>
+        <NativeSelectOption value={10000}>{radiusLabel('10km')}</NativeSelectOption>
+        <NativeSelectOption value={20000}>{radiusLabel('20km')}</NativeSelectOption>
       </NativeSelect>
     </div>
   );

@@ -30,9 +30,13 @@ function filterPlaces(
   });
 }
 
-export function useNearbyPlaces(origin: Place | null, destination: Place | null) {
+export function useNearbyPlaces(
+  origin: Place | null,
+  destination: Place | null,
+  initialRadius = 1_000,
+) {
   const [categories, setCategories] = useState<Category[]>(() => [...categorySchema.options]);
-  const [radius, setRadius] = useState(1_000);
+  const [radius, setRadius] = useState(initialRadius);
   const [crowdingLevels, setCrowdingLevels] = useState<CrowdingLevel[]>([]);
   const [petOnly, setPetOnly] = useState(false);
   const [festivalOnly, setFestivalOnly] = useState(false);
@@ -87,8 +91,7 @@ export function useNearbyPlaces(origin: Place | null, destination: Place | null)
     petOnly,
     festivalOnly,
     onFestivalOnlyChange: () => {
-      if (festivalOnly) setRadius((currentRadius) => Math.min(currentRadius, 3000));
-      else setPetOnly(false);
+      if (!festivalOnly) setPetOnly(false);
       setFestivalOnly((current) => !current);
     },
     onCategoryToggle: (category: Category) =>
@@ -104,7 +107,6 @@ export function useNearbyPlaces(origin: Place | null, destination: Place | null)
     onPetOnlyChange: () => {
       setPetOnly((current) => !current);
       setFestivalOnly(false);
-      setRadius((current) => Math.min(current, 3000));
     },
     onRadiusChange: setRadius,
     isFetching: festivalOnly

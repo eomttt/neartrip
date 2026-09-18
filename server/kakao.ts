@@ -67,6 +67,15 @@ const documentSchema = z.object({
   place_url: z.string().default(''),
 });
 const placesResponseSchema = z.object({ documents: z.array(documentSchema) });
+const nearbyResponseSchema = placesResponseSchema.extend({
+  meta: z.object({
+    is_end: z.boolean(),
+    pageable_count: z.number().int().nonnegative(),
+  }),
+});
+const PLACE_PAGE_SIZE = 15;
+// 카카오 장소 검색은 같은 검색 조건에서 최대 45개를 제공합니다.
+const MAX_PLACE_RESULTS = 45;
 const categoryCodes: Record<Exclude<Category, 'bar'>, string> = {
   restaurant: 'FD6',
   cafe: 'CE7',
@@ -109,35 +118,34 @@ export async function nearbyPlaces(
   category: Category,
   radius: number,
 ): Promise<Place[]> {
-  if (category === 'bar') {
-    const response = await requestKakao(
-      '/v2/local/search/keyword.json',
-      {
-        query: '술집',
-        category_group_code: 'FD6',
-        x: String(origin.lng),
-        y: String(origin.lat),
-        radius: String(radius),
-        sort: radius > 3_000 ? 'accuracy' : 'distance',
-        size: '15',
-      },
-      (value) => placesResponseSchema.parse(value),
+  const path =
+    category === 'bar' ? '/v2/local/search/keyword.json' : '/v2/local/search/category.json';
+  const params = {
+    ...(category === 'bar' ? { query: '술집' } : {}),
+    category_group_code: category === 'bar' ? 'FD6' : categoryCodes[category],
+    x: String(origin.lng),
+    y: String(origin.lat),
+    radius: String(radius),
+    sort: radius > 3_000 ? 'accuracy' : 'distance',
+    size: String(PLACE_PAGE_SIZE),
+  };
+  const places = new Map<string, Place>();
+  for (let page = 1; page <= Math.ceil(MAX_PLACE_RESULTS / PLACE_PAGE_SIZE); page += 1) {
+    const response = await requestKakao(path, { ...params, page: String(page) }, (value) =>
+      nearbyResponseSchema.parse(value),
     );
-    return response.documents.map((document) => documentToPlace(document, 'bar'));
+    for (const document of response.documents) {
+      places.set(document.id, documentToPlace(document, category === 'bar' ? 'bar' : undefined));
+    }
+    if (
+      response.meta.is_end ||
+      response.documents.length === 0 ||
+      page * PLACE_PAGE_SIZE >= response.meta.pageable_count
+    ) {
+      break;
+    }
   }
-  const response = await requestKakao(
-    '/v2/local/search/category.json',
-    {
-      category_group_code: categoryCodes[category],
-      x: String(origin.lng),
-      y: String(origin.lat),
-      radius: String(radius),
-      sort: radius > 3_000 ? 'accuracy' : 'distance',
-      size: '15',
-    },
-    (value) => placesResponseSchema.parse(value),
-  );
-  return response.documents.map((document) => documentToPlace(document));
+  return Array.from(places.values());
 }
 
 const pathSchema = z.object({ points: z.array(z.tuple([z.number(), z.number()])).min(2) });

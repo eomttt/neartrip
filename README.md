@@ -2,7 +2,7 @@
 
 숙소 근처의 맛집·카페·가볼 만한 곳·술집을 골라 오늘의 동선을 만듭니다.
 
-[서비스](https://neartrip-one.vercel.app) · [스펙·컨셉](https://github.com/eomttt/neartrip/wiki) · [작업 티켓](https://github.com/eomttt/neartrip/issues)
+[서비스](https://neartrip-one.vercel.app) · [스펙·컨셉](neartrip.wiki/Home.md) · [작업 티켓](https://github.com/eomttt/neartrip/issues)
 
 ## 실행
 

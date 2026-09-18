@@ -26,6 +26,39 @@ afterAll(async () => {
 });
 
 describe('여행 API', () => {
+  it('일반 장소도 반경 20km까지 조회하고 그보다 큰 반경은 거부한다', async () => {
+    const origin = `lat=${demoOrigin.lat + 0.05}&lng=${demoOrigin.lng}`;
+    const nearby = await fetch(`${baseUrl}/api/nearby?${origin}&radius=1000`);
+    expect(await nearby.json()).toEqual([]);
+    const wide = await fetch(`${baseUrl}/api/nearby?${origin}&radius=20000`);
+    expect(wide.status).toBe(200);
+    expect(z.array(placeSchema).parse(await wide.json()).length).toBeGreaterThan(0);
+    const tooWide = await fetch(`${baseUrl}/api/nearby?${origin}&radius=20001`);
+    expect(tooWide.status).toBe(400);
+  });
+
+  it('차량 이동 선택을 왕복 구간에 모두 반영한다', async () => {
+    const response = await fetch(`${baseUrl}/api/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: demoOrigin,
+        places: demoPlaces.slice(0, 2),
+        order: 'manual',
+        travelMode: 'driving',
+      }),
+    });
+    expect(response.status).toBe(200);
+    const itinerary = itinerarySchema.parse(await response.json());
+    expect(itinerary.legs).toHaveLength(3);
+    expect(
+      itinerary.legs.every(
+        (leg) =>
+          leg.travelMode === 'driving' && leg.segments.every((segment) => segment.mode === 'car'),
+      ),
+    ).toBe(true);
+  });
+
   it('예시 모드임을 명시한다', async () => {
     const response = await fetch(`${baseUrl}/api/config`);
     expect(await response.json()).toMatchObject({ demo: true });

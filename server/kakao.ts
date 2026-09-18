@@ -7,6 +7,7 @@ import type {
   Leg,
   Place,
   Segment,
+  TravelMode,
 } from '../src/domains/trip/models/model-trip';
 import { distanceMeters } from '../src/domains/trip/utils/route-order';
 
@@ -17,13 +18,14 @@ async function requestKakao<T>(
   path: string,
   params: Record<string, string>,
   parse: (value: unknown) => T,
+  baseUrl = 'https://dapi.kakao.com',
 ): Promise<T> {
   return traceKakaoCall(path, params, async (record) => {
     const key = process.env.KAKAO_REST_API_KEY;
     if (!key) throw new ProviderError('카카오 REST API 키가 설정되지 않았습니다.', 503);
     let response: Response;
     try {
-      response = await fetch(`https://dapi.kakao.com${path}?${new URLSearchParams(params)}`, {
+      response = await fetch(`${baseUrl}${path}?${new URLSearchParams(params)}`, {
         headers: { Authorization: `KakaoAK ${key}` },
         signal: AbortSignal.timeout(12_000),
       });
@@ -116,7 +118,7 @@ export async function nearbyPlaces(
         x: String(origin.lng),
         y: String(origin.lat),
         radius: String(radius),
-        sort: 'distance',
+        sort: radius > 3_000 ? 'accuracy' : 'distance',
         size: '15',
       },
       (value) => placesResponseSchema.parse(value),
@@ -130,7 +132,7 @@ export async function nearbyPlaces(
       x: String(origin.lng),
       y: String(origin.lat),
       radius: String(radius),
-      sort: 'distance',
+      sort: radius > 3_000 ? 'accuracy' : 'distance',
       size: '15',
     },
     (value) => placesResponseSchema.parse(value),
@@ -305,8 +307,85 @@ function routeWarning(segments: Segment[], connected: boolean): string | null {
   return warnings.length > 0 ? warnings.join(' ') : null;
 }
 
-export async function getLeg(from: Place, to: Place): Promise<Leg> {
-  if (from.lat === to.lat && from.lng === to.lng) return { from, to, segments: [], warning: null };
+const drivingRouteSchema = z.object({
+  summary: z.object({
+    distance: z.number().nonnegative(),
+    duration: z.number().nonnegative(),
+  }),
+  sections: z
+    .array(
+      z.object({
+        roads: z
+          .array(
+            z.object({
+              vertexes: z
+                .array(z.number())
+                .min(4)
+                .refine((points) => points.length % 2 === 0),
+            }),
+          )
+          .min(1),
+      }),
+    )
+    .min(1),
+});
+
+async function getDrivingLeg(from: Place, to: Place): Promise<Leg> {
+  const segments = await requestKakao(
+    '/v1/directions',
+    {
+      origin: `${from.lng},${from.lat}`,
+      destination: `${to.lng},${to.lat}`,
+      priority: 'RECOMMEND',
+      summary: 'false',
+    },
+    (value): Segment[] => {
+      const response = z
+        .object({
+          routes: z.array(z.object({ result_code: z.number() }).passthrough()).min(1),
+        })
+        .parse(value);
+      const successfulRoute = response.routes.find((route) => route.result_code === 0);
+      if (!successfulRoute) return [];
+      const route = drivingRouteSchema.parse(successfulRoute);
+      const points = route.sections.flatMap((section) =>
+        section.roads.flatMap((road) =>
+          road.vertexes.flatMap((lng, index, values) => {
+            const lat = values[index + 1];
+            return index % 2 === 0 && lat !== undefined ? [{ lng, lat }] : [];
+          }),
+        ),
+      );
+      return [
+        {
+          mode: 'car',
+          seconds: route.summary.duration,
+          meters: route.summary.distance,
+          points,
+          instruction: '차량·택시로 이동',
+          stops: null,
+        },
+      ];
+    },
+    'https://apis-navi.kakaomobility.com',
+  );
+  return {
+    from,
+    to,
+    travelMode: 'driving',
+    segments,
+    warning: segments.length > 0 ? null : '차량 경로를 찾지 못했어요. 길찾기 앱에서 확인해주세요.',
+  };
+}
+
+export async function getLeg(
+  from: Place,
+  to: Place,
+  travelMode: TravelMode = 'local',
+): Promise<Leg> {
+  if (from.lat === to.lat && from.lng === to.lng)
+    return { from, to, travelMode, segments: [], warning: null };
+  if (travelMode === 'driving') return getDrivingLeg(from, to);
   const walking = await getWalkRoute(from, to);
   if (walking.samePoint) {
     return {

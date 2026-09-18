@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Itinerary, Place } from '../models/model-trip';
+import type { Itinerary, Place, TravelMode } from '../models/model-trip';
 import { useMutation } from '@tanstack/react-query';
 import { postTripPlanMutations } from '../queries/postTripPlanMutations';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 import { localizeTripText } from '../i18n/localize-trip-text';
 
-export function useTripPlanner(initialOrigin: Place | null) {
+export function useTripPlanner(
+  initialOrigin: Place | null,
+  initialTravelMode: TravelMode = 'local',
+) {
   const { locale, t } = useI18n();
   const [origin, setOrigin] = useState(initialOrigin);
   const [destination, setDestination] = useState<Place | null>(null);
   const [selected, setSelected] = useState<Place[]>([]);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [error, setError] = useState('');
+  const [travelMode, setTravelMode] = useState(initialTravelMode);
   const planMutation = useMutation(postTripPlanMutations.create());
   const requestRef = useRef<AbortController | null>(null);
   useEffect(() => () => requestRef.current?.abort(), []);
@@ -26,6 +30,11 @@ export function useTripPlanner(initialOrigin: Place | null) {
     clearRoute();
     setOrigin(place);
     setSelected([]);
+  }
+  function changeTravelMode(mode: TravelMode) {
+    if (mode === travelMode) return;
+    clearRoute();
+    setTravelMode(mode);
   }
   function changeDestination(place: Place | null) {
     clearRoute();
@@ -70,7 +79,7 @@ export function useTripPlanner(initialOrigin: Place | null) {
     requestRef.current = controller;
     try {
       const result = await planMutation.mutateAsync({
-        body: { origin, destination, places: selected, order: 'manual' },
+        body: { origin, destination, places: selected, order: 'manual', travelMode },
         signal: controller.signal,
       });
       if (controller.signal.aborted) return;
@@ -90,6 +99,8 @@ export function useTripPlanner(initialOrigin: Place | null) {
     selected,
     itinerary,
     error,
+    travelMode,
+    changeTravelMode,
     isPlanning: planMutation.isPending,
     changeOrigin,
     changeDestination,

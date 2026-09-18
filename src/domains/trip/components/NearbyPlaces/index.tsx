@@ -169,7 +169,6 @@ export function NearbyPlaces({
               <PlaceRadiusSelect
                 id="search-radius"
                 radius={draftFilters.radius}
-                festivalOnly={draftFilters.festivalOnly}
                 onRadiusChange={(nextRadius) =>
                   setDraftFilters((current) => ({ ...current, radius: nextRadius }))
                 }
@@ -201,7 +200,6 @@ export function NearbyPlaces({
                   ...current,
                   petOnly: !current.petOnly,
                   festivalOnly: false,
-                  radius: Math.min(current.radius, 3_000),
                 }))
               }
               onFestivalOnlyChange={() =>
@@ -209,7 +207,6 @@ export function NearbyPlaces({
                   ...current,
                   festivalOnly: !current.festivalOnly,
                   petOnly: false,
-                  radius: current.festivalOnly ? Math.min(current.radius, 3_000) : current.radius,
                 }))
               }
             />

@@ -57,6 +57,94 @@ describe('이동 제한과 응답 검증', () => {
   });
 });
 
+describe('차량·택시 경로', () => {
+  const destination = { ...demoOrigin, id: 'driving-destination', lat: 37.59 };
+  const response = {
+    routes: [
+      {
+        result_code: 0,
+        summary: { distance: 12_500, duration: 1_800 },
+        sections: [{ roads: [{ vertexes: [127.05598, 37.54458, 127.06, 37.59] }] }],
+      },
+    ],
+  };
+
+  it('자동차 API의 실제 거리·시간·좌표를 사용하고 도보 제한을 적용하지 않는다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(response));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const leg = await getLeg(demoOrigin, destination, 'driving');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(url.origin + url.pathname).toBe('https://apis-navi.kakaomobility.com/v1/directions');
+    expect(url.searchParams.get('origin')).toBe(`${demoOrigin.lng},${demoOrigin.lat}`);
+    expect(url.searchParams.get('destination')).toBe(`${destination.lng},${destination.lat}`);
+    expect(leg).toMatchObject({
+      travelMode: 'driving',
+      warning: null,
+      segments: [
+        {
+          mode: 'car',
+          meters: 12_500,
+          seconds: 1_800,
+          stops: null,
+          points: [
+            { lng: 127.05598, lat: 37.54458 },
+            { lng: 127.06, lat: 37.59 },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('차량 경로가 없으면 직선이나 도보 경로로 바꾸지 않는다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        Response.json({
+          routes: [{ result_code: 104, result_msg: '경로 없음' }],
+        }),
+      ),
+    );
+    const leg = await getLeg(demoOrigin, destination, 'driving');
+    expect(leg.travelMode).toBe('driving');
+    expect(leg.segments).toEqual([]);
+    expect(leg.warning).toContain('차량 경로를 찾지 못했어요');
+  });
+
+  it('성공 응답의 좌표가 불완전하면 형식 오류를 드러낸다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        Response.json({
+          routes: [
+            {
+              result_code: 0,
+              summary: { distance: 100, duration: 10 },
+              sections: [{ roads: [{ vertexes: [127, 37, 128, 38, 129] }] }],
+            },
+          ],
+        }),
+      ),
+    );
+    await expect(getLeg(demoOrigin, destination, 'driving')).rejects.toThrow();
+  });
+
+  it('넓은 반경에서는 가까운 곳에만 결과가 몰리지 않게 정확도순으로 조회한다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ documents: [] }));
+    vi.stubGlobal('fetch', fetchMock);
+    await nearbyPlaces(demoOrigin, 'attraction', 20_000);
+    const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(url.searchParams.get('radius')).toBe('20000');
+    expect(url.searchParams.get('sort')).toBe('accuracy');
+  });
+});
+
 function walkResponse(seconds: number) {
   return {
     status: 'OK',

@@ -11,7 +11,9 @@ export function getGoogleRouteUrl(leg: Leg) {
     destination: routeCoordinate(leg.to),
   });
 
-  if (leg.segments.length > 0) {
+  if (leg.travelMode === 'driving' || leg.segments.some((segment) => segment.mode === 'car')) {
+    searchParams.set('travelmode', 'driving');
+  } else if (leg.segments.length > 0) {
     const travelMode = leg.segments.some((segment) => segment.mode !== 'walk')
       ? 'transit'
       : 'walking';

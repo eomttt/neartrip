@@ -8,6 +8,43 @@ import { demoOrigin, createDemoLeg } from '../../../../../server/demo';
 
 afterEach(cleanup);
 
+it.each([true, false])(
+  '차량 구간은 자동차 길찾기로 연결하고 정거장을 표시하지 않는다: %s',
+  (hasRoute) => {
+    const destination = { ...demoOrigin, id: 'destination', name: '도착 장소', lat: 37.59 };
+    const leg = createDemoLeg(demoOrigin, destination, 'driving');
+    render(
+      withQueries(
+        <RouteSummary
+          origin={demoOrigin}
+          destination={destination}
+          itinerary={{
+            demo: false,
+            places: [],
+            legs: [
+              {
+                ...leg,
+                segments: hasRoute ? leg.segments : [],
+                warning: hasRoute ? null : '차량 경로 없음',
+              },
+            ],
+          }}
+          onEdit={vi.fn()}
+          onFocusRoute={vi.fn()}
+        />,
+      ),
+    );
+    expect(screen.getByRole('link', { name: /^1구간 카카오맵/ }).getAttribute('href')).toContain(
+      '/link/by/car/',
+    );
+    const google = new URL(
+      screen.getByRole('link', { name: /^1구간 Google/ }).getAttribute('href') ?? '',
+    );
+    expect(google.searchParams.get('travelmode')).toBe('driving');
+    expect(screen.queryByText(/정거장/)).toBeNull();
+  },
+);
+
 function withQueries(children: React.ReactNode) {
   return <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>;
 }

@@ -6,7 +6,7 @@ import {
   transitResponseToCandidates,
   walkResponseToSegments,
 } from './kakao';
-import type { Segment } from '../src/domains/trip/models/model-trip';
+import { categorySchema, type Segment } from '../src/domains/trip/models/model-trip';
 import { demoOrigin } from './demo';
 import { buildTripPlan } from './trip-service';
 
@@ -136,7 +136,11 @@ describe('차량·택시 경로', () => {
 
   it('넓은 반경에서는 가까운 곳에만 결과가 몰리지 않게 정확도순으로 조회한다', async () => {
     vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
-    const fetchMock = vi.fn().mockResolvedValue(Response.json({ documents: [] }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json({ documents: [], meta: { is_end: true, pageable_count: 0 } }),
+      );
     vi.stubGlobal('fetch', fetchMock);
     await nearbyPlaces(demoOrigin, 'attraction', 20_000);
     const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
@@ -195,11 +199,128 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+function nearbyPage(ids: string[], isEnd: boolean, pageableCount = 45, categoryCode = 'FD6') {
+  return Response.json({
+    meta: { is_end: isEnd, pageable_count: pageableCount },
+    documents: ids.map((id) => ({
+      id,
+      place_name: `장소 ${id}`,
+      address_name: '전북특별자치도 군산시',
+      category_group_code: categoryCode,
+      x: '126.688',
+      y: '35.964',
+    })),
+  });
+}
+
+describe('주변 장소 전체 페이지 조회', () => {
+  it.each(categorySchema.options)('%s의 세 페이지를 끝까지 모은다', async (category) => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const ids = Array.from({ length: 45 }, (_, index) => String(index + 1));
+    const code = category === 'cafe' ? 'CE7' : category === 'attraction' ? 'AT4' : 'FD6';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(nearbyPage(ids.slice(0, 15), false, 45, code))
+      .mockResolvedValueOnce(nearbyPage(ids.slice(15, 30), false, 45, code))
+      .mockResolvedValueOnce(nearbyPage(ids.slice(30), true, 45, code));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const places = await nearbyPlaces(demoOrigin, category, 1_000);
+
+    expect(places.map((place) => place.id)).toEqual(ids);
+    expect(places.every((place) => place.category === category)).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const urls = fetchMock.mock.calls.map(([url]) => new URL(String(url)));
+    expect(urls.map((url) => url.searchParams.get('page'))).toEqual(['1', '2', '3']);
+    for (const url of urls) {
+      expect(url.pathname).toBe(
+        category === 'bar' ? '/v2/local/search/keyword.json' : '/v2/local/search/category.json',
+      );
+      expect(Object.fromEntries(url.searchParams)).toMatchObject({
+        category_group_code: code,
+        x: String(demoOrigin.lng),
+        y: String(demoOrigin.lat),
+        radius: '1000',
+        sort: 'distance',
+        size: '15',
+      });
+      expect(url.searchParams.get('query')).toBe(category === 'bar' ? '술집' : null);
+    }
+  });
+
+  it('마지막 페이지에서 멈추고 페이지 사이의 중복 장소를 합친다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const firstIds = Array.from({ length: 15 }, (_, index) => String(index + 1));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(nearbyPage(firstIds, false, 17))
+      .mockResolvedValueOnce(nearbyPage(['15', '16'], true, 17));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const places = await nearbyPlaces(demoOrigin, 'restaurant', 1_000);
+
+    expect(places.map((place) => place.id)).toEqual([...firstIds, '16']);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    { label: '마지막 페이지', ids: ['1'], isEnd: true, count: 45 },
+    { label: '조회 가능한 결과 소진', ids: ['1'], isEnd: false, count: 1 },
+    { label: '빈 결과', ids: [], isEnd: false, count: 45 },
+  ])('$label 뒤에는 추가 요청을 보내지 않는다', async ({ ids, isEnd, count }) => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const fetchMock = vi.fn().mockResolvedValueOnce(nearbyPage(ids, isEnd, count));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const places = await nearbyPlaces(demoOrigin, 'restaurant', 1_000);
+
+    expect(places.map((place) => place.id)).toEqual(ids);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('마지막 페이지 표시가 잘못되어도 제공 한도를 넘겨 반복하지 않는다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const ids = Array.from({ length: 45 }, (_, index) => String(index + 1));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(nearbyPage(ids.slice(0, 15), false, 100))
+      .mockResolvedValueOnce(nearbyPage(ids.slice(15, 30), false, 100))
+      .mockResolvedValueOnce(nearbyPage(ids.slice(30), false, 100));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const places = await nearbyPlaces(demoOrigin, 'restaurant', 1_000);
+
+    expect(places.map((place) => place.id)).toEqual(ids);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('다음 페이지 요청이 실패하면 일부 결과를 전체 결과로 반환하지 않는다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    const ids = Array.from({ length: 15 }, (_, index) => String(index + 1));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(nearbyPage(ids, false))
+      .mockResolvedValueOnce(Response.json({ message: 'rate limited' }, { status: 429 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(nearbyPlaces(demoOrigin, 'restaurant', 1_000)).rejects.toThrow('호출 한도');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('페이지 정보가 빠진 응답을 전체 결과로 받아들이지 않는다', async () => {
+    vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ documents: [] })));
+
+    await expect(nearbyPlaces(demoOrigin, 'restaurant', 1_000)).rejects.toThrow();
+  });
+});
+
 describe('카카오 실응답에서 확인한 대중교통 경계', () => {
   it('술 한잔은 주변 술집 키워드로 조회하고 별도 카테고리로 반환한다', async () => {
     vi.stubEnv('KAKAO_REST_API_KEY', 'test-only-key');
     const fetchMock = vi.fn().mockResolvedValue(
       apiResponse({
+        meta: { is_end: true, pageable_count: 1 },
         documents: [
           {
             id: 'bar-1',

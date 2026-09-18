@@ -1,0 +1,56 @@
+{
+  "feature": "neartrip-mvp",
+  "currentPhase": "write",
+  "phases": {
+    "plan": {
+      "status": "complete",
+      "completedAt": "2026-09-11T00:34:56+00:00"
+    },
+    "prepare": {
+      "status": "complete",
+      "completedAt": "2026-09-11T00:34:56+00:00"
+    },
+    "write": {
+      "status": "pending"
+    },
+    "review": {
+      "status": "pending"
+    },
+    "qa": {
+      "status": "pending"
+    }
+  },
+  "requestScope": "기존 구현을 기준으로 Spec·Concept 문서화와 GitHub Issue 준비까지. 새 기능 구현은 시작하지 않음.",
+  "providers": {
+    "documents": "local",
+    "tickets": "github-issues"
+  },
+  "repository": "eomttt/neartrip",
+  "baselineCommit": "6b2a668979ea321e414274fac3ed5042e5c77d21",
+  "baselineNote": "기존 구현을 2026-09-11 사후 기록. 이번 Drill 실행의 write/review/qa 완료 이력으로 소급하지 않음.",
+  "documents": {
+    "spec": "../NEARTRIP-MVP.md",
+    "concepts": [
+      "../Concept-Place-Discovery.md",
+      "../Concept-Trip-Plan.md",
+      "../Concept-Route-Guidance.md"
+    ],
+    "status": "../Implementation-Status.md"
+  },
+  "completedIssueUrls": [
+    "https://github.com/eomttt/neartrip/issues/1",
+    "https://github.com/eomttt/neartrip/issues/2",
+    "https://github.com/eomttt/neartrip/issues/3",
+    "https://github.com/eomttt/neartrip/issues/4",
+    "https://github.com/eomttt/neartrip/issues/5",
+    "https://github.com/eomttt/neartrip/issues/6"
+  ],
+  "pendingIssueUrls": ["https://github.com/eomttt/neartrip/issues/7"],
+  "dependencies": {
+    "7": {
+      "blockedBy": [],
+      "relatedTo": ["3"]
+    }
+  },
+  "nextAction": "Read GitHub issue #7 and implement it when the user starts write."
+}

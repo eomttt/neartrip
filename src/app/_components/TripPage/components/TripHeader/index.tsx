@@ -1,6 +1,6 @@
 import './style.css';
 import { useState } from 'react';
-import { Compass, Globe2, Info, Navigation } from 'lucide-react';
+import { Compass, Info, Navigation } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 import {
@@ -19,7 +19,7 @@ interface Props {
   configured: boolean;
 }
 export function TripHeader({ demo, configured }: Props) {
-  const { locale, setLocale, t } = useI18n();
+  const { locale, t } = useI18n();
   const [showHelp, setShowHelp] = useState(false);
   return (
     <>
@@ -35,15 +35,6 @@ export function TripHeader({ demo, configured }: Props) {
         </a>
         <span className="header-tagline">{t('brand.tagline')}</span>
         <div className="header-actions">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="language-button"
-            aria-label={t('language.switchLabel')}
-            onClick={() => setLocale(locale === 'ko' ? 'en' : 'ko')}
-          >
-            <Globe2 size={15} /> {t('language.switch')}
-          </Button>
           <Dialog open={showHelp} onOpenChange={setShowHelp}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="help-button">

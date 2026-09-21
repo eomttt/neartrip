@@ -64,8 +64,15 @@ async function setup(hasOrigin = true, initialLocale: Locale = 'ko') {
       </I18nProvider>
     </QueryClientProvider>,
   );
-  if (hasOrigin) await screen.findByRole('button', { name: '작은 식탁 담기' });
-  else await screen.findByRole('textbox', { name: '출발 장소 검색' });
+  if (hasOrigin) {
+    await screen.findByRole('button', {
+      name: initialLocale === 'ko' ? '작은 식탁 담기' : 'Add 작은 식탁',
+    });
+  } else {
+    await screen.findByRole('textbox', {
+      name: initialLocale === 'ko' ? '출발 장소 검색' : 'Search starting point',
+    });
+  }
   return user;
 }
 
@@ -194,19 +201,18 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(screen.queryByText(/정거장/)).toBeNull();
   });
 
-  it('언어를 바꿔도 담은 장소를 유지하고 주소와 문구를 함께 바꾼다', async () => {
-    const user = await setup();
-    await user.click(screen.getByRole('button', { name: '작은 식탁 담기' }));
+  it('영어로 접속하면 언어 전환 없이 장소를 담고 동선을 만든다', async () => {
+    const user = await setup(true, 'en');
+    expect(screen.getByRole('heading', { name: 'Places for today' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '영어로 보기' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'View in Korean' })).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: '영어로 보기' }));
-
-    expect(document.documentElement.lang).toBe('en');
-    expect(window.location.pathname).toBe('/en');
+    await user.click(screen.getByRole('button', { name: 'Add 작은 식탁' }));
     expect(screen.getByRole('button', { name: 'Remove 작은 식탁' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Selected 1 / 5 · Change order' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /^Build route in this order/ }));
 
-    await user.click(screen.getByRole('button', { name: 'View in Korean' }));
-    expect(screen.getByRole('button', { name: '작은 식탁 빼기' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Directions' })).toBeTruthy();
   });
 
   it('혼잡도 조회가 실패해도 장소를 담고 동선을 만들 수 있다', async () => {

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import { renderWithI18n } from '@/common/i18n/test-utils';
 import { afterEach, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import { RouteSummary } from '.';
 import { demoOrigin, createDemoLeg } from '../../../../../server/demo';
 
@@ -13,7 +14,7 @@ it.each([true, false])(
   (hasRoute) => {
     const destination = { ...demoOrigin, id: 'destination', name: '도착 장소', lat: 37.59 };
     const leg = createDemoLeg(demoOrigin, destination, 'driving');
-    render(
+    renderWithI18n(
       withQueries(
         <RouteSummary
           origin={demoOrigin}
@@ -52,7 +53,7 @@ function withQueries(children: React.ReactNode) {
 it('주의 구간에서도 경고와 이동 안내, 합산 시간을 함께 보여준다', () => {
   const destination = { ...demoOrigin, id: 'destination', name: '도착 장소', lat: 37.55 };
   const leg = createDemoLeg(demoOrigin, destination);
-  render(
+  renderWithI18n(
     withQueries(
       <RouteSummary
         destination={null}
@@ -99,7 +100,7 @@ it('구간을 각각 접고 펼쳐도 목록과 다른 구간 및 지도 선택�
     onEdit: vi.fn(),
     onFocusRoute: vi.fn(),
   };
-  const { rerender } = render(withQueries(<RouteSummary {...props} />));
+  const { rerender } = renderWithI18n(withQueries(<RouteSummary {...props} />));
   expect(screen.queryByRole('button', { name: '구간별 이동 보기' })).toBeNull();
   const region = screen.getByRole('region', { name: '구간별 이동 안내' });
   expect(region.tabIndex).toBe(0);
@@ -145,7 +146,7 @@ it('각 구간의 방향과 이동수단에 맞는 카카오맵과 Google Maps �
   const outward = createDemoLeg(demoOrigin, destination);
   const returning = createDemoLeg(destination, demoOrigin);
   const onFocusRoute = vi.fn();
-  render(
+  renderWithI18n(
     withQueries(
       <RouteSummary
         origin={demoOrigin}
@@ -215,7 +216,7 @@ it('각 구간의 방향과 이동수단에 맞는 카카오맵과 Google Maps �
 
 it('가상 장소의 예시 동선에는 외부 길찾기 링크를 표시하지 않는다', () => {
   const destination = { ...demoOrigin, id: 'destination', name: '가상 장소', lat: 37.55 };
-  render(
+  renderWithI18n(
     withQueries(
       <RouteSummary
         origin={demoOrigin}

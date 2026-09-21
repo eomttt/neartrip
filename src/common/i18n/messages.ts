@@ -1,8 +1,6 @@
 import type { Locale } from './locale';
 
 const koMessages = {
-  'language.switch': 'English',
-  'language.switchLabel': '영어로 보기',
   'metadata.title': '가까이 · neartrip | 오늘, 어디 가지?',
   'metadata.description':
     '숙소 근처의 맛집·카페·가볼 만한 곳·술집을 골라 오늘의 여행 동선을 만들어보세요.',
@@ -246,8 +244,6 @@ export type MessageKey = keyof typeof koMessages;
 export type MessageValues = Record<string, string | number>;
 
 const enMessages: Record<MessageKey, string> = {
-  'language.switch': '한국어',
-  'language.switchLabel': 'View in Korean',
   'metadata.title': 'neartrip | Plan a day around your stay in Korea',
   'metadata.description':
     'Pick food, cafés, sights, and drinks near your hotel, then turn them into a route for today.',
@@ -492,14 +488,7 @@ const enMessages: Record<MessageKey, string> = {
   'crowding.source': 'Source: Seoul Open Data Plaza',
 };
 
-const dictionaries: Record<Locale, Record<MessageKey, string>> = {
-  ko: koMessages,
-  en: enMessages,
-};
-
-export function translate(locale: Locale, key: MessageKey, values: MessageValues = {}): string {
-  return Object.entries(values).reduce(
-    (message, [name, value]) => message.replaceAll(`{${name}}`, String(value)),
-    dictionaries[locale][key],
-  );
-}
+export const resources = {
+  ko: { common: koMessages },
+  en: { common: enMessages },
+} satisfies Record<Locale, { common: Record<MessageKey, string> }>;

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
+import { renderWithI18n } from '@/common/i18n/test-utils';
 import { afterEach, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, fireEvent } from '@testing-library/react';
+import { cleanup, screen, fireEvent } from '@testing-library/react';
 import type { Crowding } from '../../models/model-crowding';
 import { CrowdingBadge } from '.';
 const value: Crowding = {
@@ -18,7 +19,7 @@ afterEach(() => {
 it('혼잡도에 구역과 한국 갱신 시각을 표시하고 개별 매장 정보와 구분한다', () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-09-11T04:00:00Z'));
-  render(<CrowdingBadge crowding={value} />);
+  renderWithI18n(<CrowdingBadge crowding={value} />);
   expect(screen.getByText('주변 여유')).toBeTruthy();
   expect(screen.getByLabelText('성수카페거리 주변 여유 안내').closest('details')?.open).toBe(false);
   expect(screen.getByText(/성수카페거리/)).toBeTruthy();
@@ -33,7 +34,7 @@ it('혼잡도에 구역과 한국 갱신 시각을 표시하고 개별 매장 �
 it('화면에 남아 있는 값이 오래되면 갱신 지연과 기준 시각을 보여준다', () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-09-11T05:00:00Z'));
-  render(<CrowdingBadge crowding={value} />);
+  renderWithI18n(<CrowdingBadge crowding={value} />);
   expect(screen.getByText('주변 혼잡도 갱신 지연')).toBeTruthy();
   expect(screen.getByText('성수카페거리')).toBeTruthy();
   expect(screen.getByText(/12:55/)).toBeTruthy();
@@ -44,7 +45,7 @@ it('화면에 남아 있는 값이 오래되면 갱신 지연과 기준 시각�
 it('서버가 갱신 지연으로 응답하면 지난 혼잡도 등급을 현재 값처럼 보여주지 않는다', () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-09-14T01:44:00Z'));
-  render(
+  renderWithI18n(
     <CrowdingBadge
       crowding={{
         ...value,
@@ -61,7 +62,7 @@ it('서버가 갱신 지연으로 응답하면 지난 혼잡도 등급을 현재
 it('예시 등급과 대체 데이터는 표시를 구분한다', () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-09-11T04:00:00Z'));
-  render(<CrowdingBadge crowding={{ ...value, demo: true, replacement: true }} />);
+  renderWithI18n(<CrowdingBadge crowding={{ ...value, demo: true, replacement: true }} />);
   expect(screen.getByText('주변 예시 여유')).toBeTruthy();
   fireEvent.click(screen.getByLabelText('성수카페거리 주변 예시 여유 안내'));
   expect(screen.getByText('서울시 대체 데이터 기준입니다.')).toBeTruthy();
@@ -70,6 +71,6 @@ const hiddenStates: Crowding['state'][] = ['unsupported', 'not_configured', 'una
 it.each(hiddenStates)('%s 상태에서는 혼잡도와 구역 정보를 모두 숨긴다', (state) => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-09-11T04:00:00Z'));
-  const { container } = render(<CrowdingBadge crowding={{ ...value, state }} />);
+  const { container } = renderWithI18n(<CrowdingBadge crowding={{ ...value, state }} />);
   expect(container.childElementCount).toBe(0);
 });

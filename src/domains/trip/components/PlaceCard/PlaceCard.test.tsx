@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { renderWithI18n } from '@/common/i18n/test-utils';
+import { cleanup, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { PlaceCard } from '.';
 import { demoOrigin } from '../../../../../server/demo';
@@ -7,7 +8,7 @@ import { demoOrigin } from '../../../../../server/demo';
 afterEach(cleanup);
 
 it('카카오 장소 상세 페이지를 HTTPS 새 창 링크로 제공한다', () => {
-  render(
+  renderWithI18n(
     <PlaceCard
       place={{ ...demoOrigin, name: '확인할 장소', url: 'http://place.map.kakao.com/12345' }}
       origin={demoOrigin}
@@ -26,7 +27,7 @@ it('카카오 장소 상세 페이지를 HTTPS 새 창 링크로 제공한다', 
 it.each(['', 'javascript:alert(1)', 'https://example.com/12345'])(
   '상세 주소가 없거나 카카오 장소 주소가 아니면 링크를 표시하지 않는다: %s',
   (url) => {
-    render(
+    renderWithI18n(
       <PlaceCard
         place={{ ...demoOrigin, url }}
         origin={demoOrigin}
@@ -40,7 +41,7 @@ it.each(['', 'javascript:alert(1)', 'https://example.com/12345'])(
 );
 
 it('동반 정보를 확인한 장소 카드에 표시하고 조건과 출처를 함께 제공한다', () => {
-  render(
+  renderWithI18n(
     <PlaceCard
       place={{ ...demoOrigin, tourism: { kind: 'pet', conditions: '소형견 · 목줄 착용' } }}
       origin={demoOrigin}
@@ -55,7 +56,7 @@ it('동반 정보를 확인한 장소 카드에 표시하고 조건과 출처를
 });
 
 it('술집 장소를 술 한잔 카테고리로 표시한다', () => {
-  render(
+  renderWithI18n(
     <PlaceCard
       place={{ ...demoOrigin, category: 'bar', name: '저녁의 잔' }}
       origin={demoOrigin}

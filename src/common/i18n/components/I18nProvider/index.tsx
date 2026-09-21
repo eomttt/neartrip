@@ -1,22 +1,15 @@
 'use client';
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { localePath, type Locale } from '../../locale';
-import { translate, type MessageKey, type MessageValues } from '../../messages';
+import { useMemo, type ReactNode } from 'react';
+import { I18nProvider as NextI18nProvider, useT } from 'next-i18next/client';
+import { i18nConfig } from '../../config';
+import { defaultLocale, isLocale, type Locale } from '../../locale';
+import { resources, type MessageKey, type MessageValues } from '../../messages';
 
 interface I18nContextValue {
   locale: Locale;
-  setLocale: (locale: Locale) => void;
   t: (key: MessageKey, values?: MessageValues) => string;
 }
-
-const defaultContext: I18nContextValue = {
-  locale: 'ko',
-  setLocale: () => {},
-  t: (key, values) => translate('ko', key, values),
-};
-
-const I18nContext = createContext<I18nContextValue>(defaultContext);
 
 export function I18nProvider({
   initialLocale,
@@ -25,25 +18,24 @@ export function I18nProvider({
   initialLocale: Locale;
   children: ReactNode;
 }) {
-  const [locale, setCurrentLocale] = useState(initialLocale);
-  const value = useMemo<I18nContextValue>(
-    () => ({
-      locale,
-      setLocale(nextLocale) {
-        setCurrentLocale(nextLocale);
-        document.documentElement.lang = nextLocale;
-        document.title = translate(nextLocale, 'metadata.title');
-        const description = document.querySelector('meta[name="description"]');
-        description?.setAttribute('content', translate(nextLocale, 'metadata.description'));
-        window.history.replaceState(window.history.state, '', localePath(nextLocale));
-      },
-      t: (key, values) => translate(locale, key, values),
-    }),
-    [locale],
+  return (
+    <NextI18nProvider
+      language={initialLocale}
+      supportedLngs={i18nConfig.supportedLngs}
+      fallbackLng={i18nConfig.fallbackLng}
+      resources={resources}
+      i18nextOptions={i18nConfig.i18nextOptions}
+    >
+      {children}
+    </NextI18nProvider>
   );
-  return <I18nContext value={value}>{children}</I18nContext>;
 }
 
 export function useI18n(): I18nContextValue {
-  return useContext(I18nContext);
+  const { i18n, t } = useT();
+  const locale = isLocale(i18n.language) ? i18n.language : defaultLocale;
+  return useMemo(
+    () => ({ locale, t: (key: MessageKey, values?: MessageValues) => t(key, values) }),
+    [locale, t],
+  );
 }

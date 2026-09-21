@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { renderWithI18n } from '@/common/i18n/test-utils';
+import { act, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { KakaoMap } from '.';
 import { demoOrigin, demoPlaces } from '../../../../../server/demo';
@@ -69,7 +70,7 @@ it('지도 크기가 바뀌거나 장소를 담아도 현재 확대 상태를 �
   });
   const onShowEntireRoute = vi.fn();
   const onSelect = vi.fn();
-  const { rerender } = render(
+  const { rerender } = renderWithI18n(
     <KakaoMap
       origin={demoOrigin}
       places={[place]}

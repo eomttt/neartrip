@@ -48,8 +48,7 @@
     gap: calc(var(--spacing) * 2);
     margin-left: auto;
   }
-  .help-button,
-  .language-button {
+  .help-button {
     min-height: 36px;
     font-size: var(--text-xs);
   }
@@ -110,7 +109,6 @@
       font-size: 18px;
       gap: calc(var(--spacing) * 2);
     }
-    .language-button,
     .help-button {
       font-size: 11px;
       padding-inline: calc(var(--spacing) * 2);

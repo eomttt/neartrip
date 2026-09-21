@@ -2,7 +2,7 @@
 
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Car, Footprints } from 'lucide-react';
+import { ArrowRight, Car, Footprints, Navigation } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 import { getRouteHighlight, type RouteMapHandle } from '@/domains/trip/utils/route-highlight';
@@ -44,7 +44,9 @@ export function TripPage() {
   if (!config.data)
     return (
       <div className="app-loading">
-        <span className="brand-logo">⌁</span>
+        <span className="brand-logo" aria-hidden="true">
+          <Navigation size={21} />
+        </span>
         <h1>{t('loading.brand')}</h1>
         {config.error ? (
           <>
@@ -124,7 +126,7 @@ function Planner({
           <li>
             <Button
               variant="ghost"
-              className="h-auto w-full px-1 py-2"
+              className="h-auto w-full rounded-none px-1 py-2"
               ref={discoverTab}
               aria-label={t('steps.discoverLabel')}
               aria-current={activeView === 'discover' ? 'step' : undefined}
@@ -142,7 +144,7 @@ function Planner({
             <Button
               ref={mapTab}
               variant="ghost"
-              className="h-auto w-full px-1 py-2"
+              className="h-auto w-full rounded-none px-1 py-2"
               aria-label={t('steps.routeLabel')}
               aria-current={activeView !== 'discover' ? 'step' : undefined}
               aria-controls="map-view"
@@ -167,6 +169,13 @@ function Planner({
           data-active={isDesktop || activeView === 'discover'}
           data-has-origin={!!planner.origin}
         >
+          {planner.origin ? (
+            <div className="planner-heading">
+              <span>{t('planner.eyebrow')}</span>
+              <h1>{t('planner.title')}</h1>
+              <p>{t('planner.description')}</p>
+            </div>
+          ) : null}
           <TripEndpoints
             origin={planner.origin}
             destination={planner.destination}
@@ -178,8 +187,7 @@ function Planner({
             <>
               <div className="trip-travel-options">
                 {isDesktop ? (
-                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span>{t('filters.radius')}</span>
+                  <div className="trip-radius">
                     <PlaceRadiusSelect
                       id="desktop-search-radius"
                       radius={nearby.radius}
@@ -187,11 +195,11 @@ function Planner({
                     />
                   </div>
                 ) : null}
-                <div role="group" aria-label={t('travel.label')} className="flex gap-2">
+                <div role="group" aria-label={t('travel.label')} className="travel-mode-switch">
                   <Button
                     ref={travelModeButton}
                     size="sm"
-                    variant={planner.travelMode === 'local' ? 'default' : 'outline'}
+                    variant="ghost"
                     aria-pressed={planner.travelMode === 'local'}
                     onClick={() => planner.changeTravelMode('local')}
                   >
@@ -199,7 +207,7 @@ function Planner({
                   </Button>
                   <Button
                     size="sm"
-                    variant={planner.travelMode === 'driving' ? 'default' : 'outline'}
+                    variant="ghost"
                     aria-pressed={planner.travelMode === 'driving'}
                     onClick={() => planner.changeTravelMode('driving')}
                   >
@@ -227,13 +235,16 @@ function Planner({
           ) : null}
           {(isDesktop || activeView === 'discover') && planner.origin ? (
             <div className="step-next-action">
+              {planner.selected.length === 0 ? (
+                <p className="selection-hint">{t('planner.selectionHint')}</p>
+              ) : null}
               {planner.error ? (
                 <p role="alert" className="mb-2 text-xs text-destructive">
                   {planner.error}
                 </p>
               ) : null}
               <Button
-                className="h-11 w-full"
+                className="build-plan-button h-12 w-full"
                 disabled={
                   !planner.origin ||
                   (!planner.selected.length && !planner.destination) ||

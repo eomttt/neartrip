@@ -20,8 +20,7 @@ const koMessages = {
     '도착점을 선택하면 그곳에서 여행을 마치고, 비워두면 출발점으로 돌아와요. 날짜·영업시간·체류시간은 포함되지 않아요.',
   'help.start': '여행 시작하기',
   'demo.title': '예시로 둘러보는 중',
-  'demo.description':
-    '가상의 맛집·카페·술집과 개략도로 체험해보세요. 실제 장소 검색은 카카오 키 연결 후 사용할 수 있어요.',
+  'demo.description': '가상 장소와 지도로 여행을 미리 만들어보세요.',
   'config.missing':
     '카카오 키 설정이 일부 빠져 있어요. .env.local의 REST 키와 JavaScript 키를 확인해주세요.',
   'loading.brand': '가까이',
@@ -34,6 +33,10 @@ const koMessages = {
   'steps.route': '동선 보기',
   'steps.routeLabel': '2단계 동선 보기',
   'discover.region': '장소 찾기와 선택',
+  'planner.eyebrow': 'YOUR LITTLE GETAWAY',
+  'planner.title': '오늘, 어디 갈까요?',
+  'planner.description': '마음에 드는 곳을 담아 나만의 하루를 만들어요.',
+  'planner.selectionHint': '최대 5곳을 담아 동선을 만들 수 있어요.',
   'map.region': '여행 지도',
   'plan.loading': '길을 찾아보고 있어요',
   'plan.build': '순서대로 동선 짜기',
@@ -265,8 +268,7 @@ const enMessages: Record<MessageKey, string> = {
     'If you choose a destination, your trip ends there. Dates, opening hours, and time spent at each place are not included.',
   'help.start': 'Start planning',
   'demo.title': 'Exploring the demo',
-  'demo.description':
-    'Try the sample restaurants, cafés, bars, and map. Connect Kakao keys to search real places.',
+  'demo.description': 'Try a day out with sample places and an illustrative map.',
   'config.missing':
     'Some Kakao keys are missing. Check the REST and JavaScript keys in .env.local.',
   'loading.brand': 'neartrip',
@@ -279,6 +281,10 @@ const enMessages: Record<MessageKey, string> = {
   'steps.route': 'View route',
   'steps.routeLabel': 'Step 2: view route',
   'discover.region': 'Find and choose places',
+  'planner.eyebrow': 'YOUR LITTLE GETAWAY',
+  'planner.title': 'Where to today?',
+  'planner.description': 'Pick a few places. Make the day your own.',
+  'planner.selectionHint': 'Add up to 5 places to plan your route.',
   'map.region': 'Trip map',
   'plan.loading': 'Finding your route',
   'plan.build': 'Build route in this order',

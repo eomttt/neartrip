@@ -9,10 +9,10 @@ import { useI18n } from '@/common/i18n/components/I18nProvider';
 import { categoryMessageKeys } from '../../i18n/trip-message-keys';
 
 const categoryPinColors: Record<Category, string> = {
-  restaurant: '#bc725b',
-  cafe: '#b5824f',
-  attraction: '#668c73',
-  bar: '#87647f',
+  restaurant: 'var(--map-pin)',
+  cafe: 'var(--map-pin)',
+  attraction: 'var(--map-pin)',
+  bar: 'var(--map-pin)',
 };
 const categoryPinLabels: Record<Category, string> = {
   restaurant: 'F',
@@ -104,62 +104,67 @@ export function DemoMap({
             patternUnits="userSpaceOnUse"
             patternTransform="rotate(-12)"
           >
-            <rect width="116" height="99" fill="#eceee7" />
-            <rect x="8" y="8" width="98" height="81" rx="8" fill="#e0e3da" />
-            <path d="M30 8V89M8 57H106M66 8V57" stroke="#eceee7" strokeWidth="4" />
+            <rect width="116" height="99" fill="var(--map-land)" />
+            <rect x="8" y="8" width="98" height="81" rx="8" fill="var(--map-block)" />
+            <path d="M30 8V89M8 57H106M66 8V57" stroke="var(--map-land)" strokeWidth="4" />
           </pattern>
           <pattern id="trees" width="36" height="36" patternUnits="userSpaceOnUse">
-            <circle cx="18" cy="18" r="6" fill="#c1d3b9" />
+            <circle cx="18" cy="18" r="6" fill="var(--map-trees)" />
           </pattern>
           <filter id="pin-shadow">
             <feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity=".13" />
           </filter>
         </defs>
-        <rect width="900" height="760" fill="#e9ece3" />
+        <rect width="900" height="760" fill="var(--map-land)" />
         <g
           transform={`translate(${center.x * (1 - zoom)} ${center.y * (1 - zoom)}) scale(${zoom})`}
         >
           <rect x="-300" y="-300" width="1500" height="1400" fill="url(#blocks)" />
-          <path d="M-50 640Q230 565 430 670T960 625L960 850H-50Z" fill="#bfd8d7" />
+          <path d="M-50 640Q230 565 430 670T960 625L960 850H-50Z" fill="var(--map-water)" />
           <path
             d="M-50 616Q230 541 430 646T960 601"
-            stroke="#dce8d4"
+            stroke="var(--map-bank)"
             strokeWidth="35"
             fill="none"
           />
-          <path d="M-10 180L145 136L299 350L245 560L80 550L-20 400Z" fill="#cfdcc3" />
+          <path d="M-10 180L145 136L299 350L245 560L80 550L-20 400Z" fill="var(--map-park)" />
           <path d="M-10 180L145 136L299 350L245 560L80 550L-20 400Z" fill="url(#trees)" />
-          <path d="M12 289Q185 255 210 401T82 528" stroke="#e8eddd" fill="none" strokeWidth="9" />
+          <path
+            d="M12 289Q185 255 210 401T82 528"
+            stroke="var(--map-land)"
+            fill="none"
+            strokeWidth="9"
+          />
           <path
             d="M-100 405L990 192M372-60L518 790M-20 105L934 507"
             fill="none"
-            stroke="#d4d9cf"
+            stroke="var(--map-road-border)"
             strokeWidth="25"
           />
           <path
             d="M-100 405L990 192M372-60L518 790M-20 105L934 507"
             fill="none"
-            stroke="#fffefa"
+            stroke="var(--background)"
             strokeWidth="19"
           />
           <path
             d="M-100 405L990 192"
             fill="none"
-            stroke="#aab99e"
+            stroke="var(--map-rail)"
             strokeWidth="3"
             strokeDasharray="7 6"
           />
-          <g fill="#919e8d" fontSize="13" fontFamily="sans-serif">
-            <text x="106" y="365" fill="#6d8c62" fontSize="19" fontWeight="600">
+          <g fill="var(--map-label)" fontSize="13" fontFamily="sans-serif">
+            <text x="106" y="365" fill="var(--map-label)" fontSize="19" fontWeight="600">
               초록 공원
             </text>
             <text x="589" y="211" transform="rotate(-11 589 211)">
               예시 큰길
             </text>
-            <text x="577" y="531" fontSize="22" letterSpacing="8" fill="#a0aa9c">
+            <text x="577" y="531" fontSize="22" letterSpacing="8" fill="var(--map-label)">
               성 수 동
             </text>
-            <text x="657" y="681" fill="#739d9c" letterSpacing="8">
+            <text x="657" y="681" fill="var(--map-label)" letterSpacing="8">
               한 강
             </text>
             <text x="178" y="132">
@@ -175,7 +180,7 @@ export function DemoMap({
                   return `${p.x},${p.y}`;
                 })
                 .join(' ')}
-              stroke="#245d46"
+              stroke="var(--primary)"
               strokeWidth="4"
               strokeDasharray="8 7"
               strokeLinecap="round"
@@ -220,7 +225,7 @@ export function DemoMap({
             const canToggle = !isOrigin && !isDestination;
             const color =
               isOrigin || isDestination || index >= 0
-                ? '#245d46'
+                ? 'var(--primary)'
                 : categoryPinColors[place.category];
             return (
               <g
@@ -284,7 +289,12 @@ export function DemoMap({
                   className="svg-pin"
                   filter="url(#pin-shadow)"
                 >
-                  <circle r={isOrigin ? 27 : 21} fill={color} stroke="#fffefa" strokeWidth="4" />
+                  <circle
+                    r={isOrigin ? 27 : 21}
+                    fill={color}
+                    stroke="var(--background)"
+                    strokeWidth="4"
+                  />
                   <text
                     textAnchor="middle"
                     y="5"
@@ -306,10 +316,10 @@ export function DemoMap({
                 <text
                   y="43"
                   textAnchor="middle"
-                  fill="#39463a"
+                  fill="var(--foreground)"
                   fontSize="12"
                   fontWeight="600"
-                  stroke="#f4f5ef"
+                  stroke="var(--map-land)"
                   strokeWidth="5"
                   paintOrder="stroke"
                 >

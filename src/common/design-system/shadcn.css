@@ -28,22 +28,40 @@
 
 @layer base {
   :root {
-    --background: #fffefa;
-    --foreground: #263c32;
-    --primary: #245d46;
+    --background: #ffffff;
+    --foreground: #202630;
+    --primary: #2563eb;
     --primary-foreground: #ffffff;
-    --secondary: #edf1e8;
-    --secondary-foreground: #263c32;
-    --muted: #f0f3e9;
-    --muted-foreground: #6c7a6d;
-    --accent: #edf1e8;
-    --accent-foreground: #245d46;
+    --secondary: #eff5ff;
+    --secondary-foreground: #202630;
+    --muted: #f3f4f6;
+    --muted-foreground: #667085;
+    --accent: #eff5ff;
+    --accent-foreground: #1d4ed8;
     --destructive: #b33d30;
     --warning: #875c00;
-    --border: #e6e9e1;
-    --input: #bccabc;
-    --ring: #7f9f78;
-    --radius: 0.625rem;
+    --border: #e6e9ef;
+    --input: #d4dae3;
+    --ring: #2563eb;
+    --radius: 0.75rem;
+    --brand-accent: var(--primary);
+    --brand-accent-soft: var(--secondary);
+    --surface-canvas: #f5f6f8;
+    --map-pin: #596579;
+    --map-land: #f1f3f6;
+    --map-block: #e6e9ef;
+    --map-park: #e2e8ee;
+    --map-trees: #cfd9e2;
+    --map-water: #d9e9fc;
+    --map-bank: #e7eef7;
+    --map-road-border: #d3dae4;
+    --map-rail: #aebdd0;
+    --map-label: #8290a3;
+    --route-walk: #2563eb;
+    --route-bus: #64748b;
+    --route-rail: #1e40af;
+    --route-highlight: #172554;
+    --shadow-panel: 0 4px 24px #18223008;
   }
   * {
     @apply border-border;

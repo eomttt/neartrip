@@ -3,8 +3,8 @@
 @layer base {
   :root {
     font-family: 'DM Sans', 'Noto Sans KR', sans-serif;
-    color: #263c32;
-    background: #f8f9f5;
+    color: var(--foreground);
+    background: var(--surface-canvas);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -47,7 +47,7 @@
   a:focus-visible,
   input:focus-visible,
   select:focus-visible {
-    outline: 3px solid #b38640;
+    outline: 3px solid var(--ring);
     outline-offset: 4px;
   }
   a {
@@ -67,7 +67,7 @@
     touch-action: manipulation;
   }
   ::selection {
-    background: #dce9b5;
+    background: var(--secondary);
   }
   .sr-only {
     position: absolute;
@@ -89,8 +89,8 @@
     align-items: center;
   }
   .section-heading h2 {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: var(--text-base);
+    font-weight: 700;
     letter-spacing: -0.5px;
   }
   .spinner {

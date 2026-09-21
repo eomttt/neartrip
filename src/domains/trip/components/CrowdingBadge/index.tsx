@@ -40,29 +40,19 @@ export function CrowdingBadge({ crowding }: { crowding: Crowding }) {
   return (
     <details className="group/crowding mt-2 text-xs leading-relaxed">
       <summary
-        className="flex cursor-pointer list-none items-start gap-2 rounded-lg py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
+        className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
         aria-label={t('crowding.guide', { area: areaName, label })}
       >
-        <span className="min-w-0 flex-1">
-          <span className="block font-medium text-foreground">{areaName}</span>
-          <span
-            className={`mt-1 inline-block max-w-full rounded-md px-2 py-1 font-medium ${color}`}
-          >
-            {label}
-          </span>
-          <span className="mt-1 block text-muted-foreground">
-            {t('crowding.observed', {
-              time: timeFormat.format(new Date(observedAt)),
-            })}
-          </span>
-        </span>
+        <span className={`inline-block rounded-md px-2 py-0.5 font-medium ${color}`}>{label}</span>
         <ChevronDown
           size={14}
           aria-hidden="true"
-          className="mt-1 shrink-0 group-open/crowding:rotate-180"
+          className="shrink-0 text-muted-foreground group-open/crowding:rotate-180"
         />
       </summary>
-      <div className="mt-2 ml-2 space-y-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-muted-foreground">
+      <div className="mt-2 space-y-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-muted-foreground">
+        <p className="font-medium text-foreground">{areaName}</p>
+        <p>{t('crowding.observed', { time: timeFormat.format(new Date(observedAt)) })}</p>
         <p className="whitespace-normal break-words text-xs text-muted-foreground">
           {delayed
             ? t('crowding.delayedDescription')

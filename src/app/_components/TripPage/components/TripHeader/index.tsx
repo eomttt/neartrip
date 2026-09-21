@@ -1,6 +1,6 @@
 import './style.css';
 import { useState } from 'react';
-import { Compass, Globe2, Info } from 'lucide-react';
+import { Compass, Globe2, Info, Navigation } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 import {
@@ -25,8 +25,13 @@ export function TripHeader({ demo, configured }: Props) {
     <>
       <header className="app-header">
         <a href={`/${locale}`} className="brand" aria-label={t('brand.home')}>
-          <span className="brand-logo">⌁</span>
-          <span>{t('brand.name')}</span>
+          <span className="brand-logo" aria-hidden="true">
+            <Navigation size={21} strokeWidth={2} />
+          </span>
+          <span>
+            {t('brand.name')}
+            {locale === 'ko' ? <small>neartrip</small> : null}
+          </span>
         </a>
         <span className="header-tagline">{t('brand.tagline')}</span>
         <div className="header-actions">

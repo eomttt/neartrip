@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/common/design-system/components/Dialog';
-import { ArrowDown, ArrowUp, RotateCcw, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/common/design-system/components/Button';
 import type { Place } from '../../models/model-trip';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
@@ -32,6 +32,7 @@ export function SelectedPlaces({ places, onMove, onRemove, onReset }: Props) {
         <DialogTrigger asChild>
           <Button variant="secondary" className="h-10 w-full justify-between text-xs">
             {t('selected.trigger', { count: places.length })}
+            <ArrowUpDown size={14} aria-hidden="true" />
           </Button>
         </DialogTrigger>
         <DialogContent className="selected-places-dialog">

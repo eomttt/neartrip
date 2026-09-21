@@ -104,7 +104,7 @@ export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, cro
       <Button
         variant={isSelected ? 'default' : 'outline'}
         size="icon-sm"
-        className="add-place size-10 rounded-full"
+        className="add-place size-9 rounded-xl shadow-none"
         aria-label={t(isSelected ? 'place.remove' : 'place.add', { name: place.name })}
         aria-pressed={isSelected}
         disabled={isDisabled && !isSelected}

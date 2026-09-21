@@ -9,7 +9,7 @@
     min-height: 36px;
     border-color: white;
     background: var(--paper);
-    box-shadow: 0 3px 14px #263c3220;
+    box-shadow: 0 3px 14px #18223020;
   }
   .map-filter-action button span {
     display: grid;

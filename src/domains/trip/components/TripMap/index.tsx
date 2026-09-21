@@ -39,18 +39,28 @@ export function TripMap({
       </div>
       <div className="map-legend">
         <span>
-          <i className="legend-food" />
+          <i className="legend-food" aria-hidden="true">
+            F
+          </i>
           {t('category.restaurant')}
         </span>
         <span>
-          <i className="legend-cafe" />
+          <i className="legend-cafe" aria-hidden="true">
+            C
+          </i>
           {t('category.cafe')}
         </span>
         <span>
-          <i className="legend-place" /> {t('category.attraction')}
+          <i className="legend-place" aria-hidden="true">
+            P
+          </i>{' '}
+          {t('category.attraction')}
         </span>
         <span>
-          <i className="legend-bar" /> {t('category.bar')}
+          <i className="legend-bar" aria-hidden="true">
+            B
+          </i>{' '}
+          {t('category.bar')}
         </span>
       </div>
       {!itinerary ? (

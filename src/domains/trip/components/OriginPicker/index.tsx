@@ -50,7 +50,7 @@ export function OriginPicker({ value, demo, onChange }: Props) {
           {t('origin.searchLabel')}
         </label>
         <Input
-          className="h-10 border-0 px-0 text-base shadow-none focus-visible:ring-0 md:text-xs"
+          className="h-10 border-0 px-0 text-base shadow-none focus-visible:ring-0 md:text-sm"
           ref={originSearch}
           id="origin-search"
           value={input}

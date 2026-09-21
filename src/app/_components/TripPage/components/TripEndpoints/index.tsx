@@ -58,10 +58,12 @@ export function TripEndpoints({
         <Button
           ref={trigger}
           variant="outline"
-          className="h-auto w-full justify-start gap-3 px-3 py-3 text-left"
+          className="trip-endpoints h-auto w-full justify-start gap-3 rounded-xl px-4 py-3.5 text-left shadow-none"
           aria-label={t('endpoints.edit')}
         >
-          <MapPin className="shrink-0 text-primary" size={18} />
+          <span className="endpoint-marker">
+            <MapPin size={18} />
+          </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold">
               {t('endpoints.origin', { name: origin.name })}

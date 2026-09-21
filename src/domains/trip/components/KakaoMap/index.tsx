@@ -291,6 +291,7 @@ export function KakaoMap({
       });
       overlays.push(overlay);
     }
+    const palette = getComputedStyle(document.documentElement);
     for (const leg of itinerary?.legs ?? []) {
       for (const segment of leg.segments) {
         const path = segment.points.map((point) => new kakao.maps.LatLng(point.lat, point.lng));
@@ -302,10 +303,10 @@ export function KakaoMap({
             strokeWeight: 5,
             strokeColor:
               segment.mode === 'walk' || segment.mode === 'car'
-                ? '#245d46'
+                ? palette.getPropertyValue('--route-walk').trim()
                 : segment.mode === 'bus'
-                  ? '#b66b3d'
-                  : '#4264af',
+                  ? palette.getPropertyValue('--route-bus').trim()
+                  : palette.getPropertyValue('--route-rail').trim(),
             strokeOpacity: 0.9,
             strokeStyle: segment.mode === 'walk' || segment.mode === 'car' ? 'solid' : 'shortdash',
           }),

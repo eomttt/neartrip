@@ -59,6 +59,14 @@ export function TripHeader({ demo, configured }: Props) {
               </ol>
               <p className="text-xs leading-relaxed text-muted-foreground">{t('help.note')}</p>
               <DialogFooter>
+                <a
+                  href={`/${locale}/privacy`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mr-auto self-center text-sm text-muted-foreground underline underline-offset-4"
+                >
+                  {locale === 'ko' ? '개인정보처리방침 · 새 탭' : 'Privacy policy · new tab'}
+                </a>
                 <DialogClose asChild>
                   <Button>{t('help.start')}</Button>
                 </DialogClose>

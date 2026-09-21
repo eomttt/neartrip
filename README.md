@@ -59,6 +59,18 @@ PC는 화면 폭 1,024px부터 장소 목록과 지도를 나란히 보여줍니
 
 ## 개발·배포
 
+### Google AdSense
+
+공통 레이아웃에 게시자 `pub-9152190009267204`의 확인 메타 태그와 광고 코드를 넣었습니다. `/ads.txt`에서도 같은 게시자를 확인할 수 있습니다. 운영 빌드에서 광고 코드를 불러오며 개발 서버와 Vercel Preview에서는 불러오지 않습니다. `ADSENSE_ENABLED=false`로 설정하고 다시 배포하면 광고를 끕니다.
+
+애드센스의 사이트 목록에 `neartrip-one.vercel.app`을 등록하고 배포 후 소유권 확인과 검토 요청을 완료합니다. 승인 후 사이트의 자동 광고를 켜야 광고가 표시됩니다. 지도와 버튼을 가리지 않도록 광고 미리보기를 확인하고 `/ko/privacy`, `/en/privacy`는 자동 광고에서 제외합니다.
+
+개인정보처리방침은 `/ko/privacy`와 `/en/privacy`에 있으며 사용법 창에서 열 수 있습니다. 유럽 경제 지역·영국·스위스 방문자의 광고 동의는 애드센스의 '개인 정보 보호 및 메시지'에서 Google 인증 동의 메시지를 설정합니다.
+
+[사이트 연결 안내](https://support.google.com/adsense/answer/7584263?hl=ko) · [ads.txt 안내](https://support.google.com/adsense/answer/12171612?hl=ko) · [광고 쿠키 필수 안내](https://support.google.com/adsense/answer/1348695?hl=ko)
+
+### 검증과 배포
+
 Next.js App Router · React · TypeScript · TanStack Query · shadcn/ui
 
 ```sh

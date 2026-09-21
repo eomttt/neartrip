@@ -6,6 +6,8 @@ import { I18nProvider } from '@/common/i18n/components/I18nProvider';
 import { isLocale, locales } from '@/common/i18n/locale';
 import { QueryProvider } from '@/common/react-query/components/QueryProvider';
 
+const adsenseClientId = 'ca-pub-9152190009267204';
+
 const metadataByLocale = {
   ko: {
     title: '가까이 · neartrip | 오늘, 어디 가지?',
@@ -36,6 +38,7 @@ export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Pr
     title: copy.title,
     description: copy.description,
     applicationName: 'neartrip',
+    other: { 'google-adsense-account': adsenseClientId },
     alternates: {
       canonical: `/${locale}`,
       languages: { ko: '/ko', en: '/en', 'x-default': '/en' },
@@ -62,8 +65,21 @@ export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Pr
 export default async function LocaleLayout({ children, params }: LayoutProps<'/[locale]'>) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
+  const adsEnabled =
+    process.env.NODE_ENV === 'production' &&
+    process.env.VERCEL_ENV !== 'preview' &&
+    process.env.ADSENSE_ENABLED !== 'false';
   return (
     <html lang={locale}>
+      <head>
+        {adsEnabled ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
+      </head>
       <body>
         <I18nProvider initialLocale={locale}>
           <QueryProvider>{children}</QueryProvider>

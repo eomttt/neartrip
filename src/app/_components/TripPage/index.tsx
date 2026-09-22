@@ -30,17 +30,21 @@ function getDesktopSnapshot() {
   return window.matchMedia?.(desktopMediaQuery).matches ?? false;
 }
 function getServerDesktopSnapshot() {
-  return false;
+  return null;
 }
 
-export function TripPage() {
+interface Props {
+  initialConfig: { demo: boolean; configured: boolean; demoOrigin: Place };
+}
+
+export function TripPage({ initialConfig }: Props) {
   const { t } = useI18n();
   const isDesktop = useSyncExternalStore(
     subscribeDesktop,
     getDesktopSnapshot,
     getServerDesktopSnapshot,
   );
-  const config = useQuery(tripQueries.config());
+  const config = useQuery({ ...tripQueries.config(), initialData: initialConfig });
   if (!config.data)
     return (
       <div className="app-loading">
@@ -60,11 +64,12 @@ export function TripPage() {
     );
   return (
     <Planner
-      key={config.data.demo ? 'demo' : 'live'}
+      // 서버에는 화면 폭이 없으므로 첫 브라우저 렌더에서만 기본 이동 조건을 초기화한다.
+      key={`${config.data.demo ? 'demo' : 'live'}-${isDesktop === null ? 'server' : 'browser'}`}
       demo={config.data.demo}
       initialOrigin={config.data.demo ? config.data.demoOrigin : null}
       configured={config.data.configured}
-      isDesktop={isDesktop}
+      isDesktop={isDesktop ?? false}
     />
   );
 }

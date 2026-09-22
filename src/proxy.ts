@@ -13,4 +13,4 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ['/', '/privacy'] };
+export const config = { matcher: ['/', '/privacy', '/guide'] };

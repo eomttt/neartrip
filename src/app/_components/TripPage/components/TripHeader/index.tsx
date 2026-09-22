@@ -35,6 +35,12 @@ export function TripHeader({ demo, configured }: Props) {
         </a>
         <span className="header-tagline">{t('brand.tagline')}</span>
         <div className="header-actions">
+          <a
+            href={`/${locale}/guide`}
+            className="text-xs text-primary underline underline-offset-4"
+          >
+            {locale === 'ko' ? '여행 가이드' : 'Travel guide'}
+          </a>
           <Dialog open={showHelp} onOpenChange={setShowHelp}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="help-button">

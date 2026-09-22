@@ -45,19 +45,21 @@ describe('브라우저 선호 언어로 접속', () => {
     expect(response.headers.get('set-cookie')).toBeNull();
   });
 
-  it('개인정보 안내도 같은 선호 언어로 연다', () => {
+  it.each(['privacy', 'guide'])('%s도 같은 선호 언어로 연다', (path) => {
     const response = proxy(
-      new NextRequest('https://neartrip.example/privacy', {
+      new NextRequest(`https://neartrip.example/${path}`, {
         headers: { 'accept-language': 'ko-KR,en;q=0.5' },
       }),
     );
 
-    expect(response.headers.get('location')).toBe('https://neartrip.example/ko/privacy');
+    expect(response.headers.get('location')).toBe(`https://neartrip.example/ko/${path}`);
   });
 
   it.each([
     ['/', true],
     ['/privacy', true],
+    ['/guide', true],
+    ['/en/guide', false],
     ['/ko', false],
     ['/en', false],
     ['/ko/privacy', false],

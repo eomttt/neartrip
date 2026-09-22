@@ -8,6 +8,7 @@ import { createTestServer } from '../../../../server/test-server';
 import { demoOrigin } from '../../../../server/demo';
 import { TripPage } from '.';
 import { I18nProvider } from '@/common/i18n/components/I18nProvider';
+import { renderToString } from 'react-dom/server';
 import type { Locale } from '@/common/i18n/locale';
 
 const nativeFetch = globalThis.fetch;
@@ -60,7 +61,7 @@ async function setup(hasOrigin = true, initialLocale: Locale = 'ko') {
   render(
     <QueryClientProvider client={client}>
       <I18nProvider initialLocale={initialLocale}>
-        <TripPage />
+        <TripPage initialConfig={{ demo: hasOrigin, configured: !hasOrigin, demoOrigin }} />
       </I18nProvider>
     </QueryClientProvider>,
   );
@@ -137,6 +138,33 @@ async function chooseDestination(user: ReturnType<typeof userEvent.setup>, name:
 }
 
 describe('두 단계 여행 화면과 예시 API 연결', () => {
+  it('서버 HTML을 데스크톱에서 열면 10km와 차량 이동으로 시작한다', async () => {
+    vi.stubGlobal('matchMedia', () => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const ui = (
+      <QueryClientProvider client={client}>
+        <I18nProvider initialLocale="ko">
+          <TripPage initialConfig={{ demo: true, configured: false, demoOrigin }} />
+        </I18nProvider>
+      </QueryClientProvider>
+    );
+    const container = document.createElement('div');
+    container.innerHTML = renderToString(ui);
+    expect(container.textContent).toContain('오늘 들러볼 곳');
+    document.body.append(container);
+    render(ui, { container, hydrate: true });
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '차량·택시' }).getAttribute('aria-pressed')).toBe(
+        'true',
+      ),
+    );
+    expect(screen.getByRole('option', { name: '반경 10km', selected: true })).toBeTruthy();
+  });
+
   it('PC는 지도와 목록을 함께 열고 10km에서 차량 동선을 만든다', async () => {
     let desktop = true;
     const listeners = new Set<() => void>();
@@ -325,38 +353,27 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     expect(screen.getByRole('button', { name: '장소 필터 1개 적용' })).toBeTruthy();
   });
   it('출발지를 먼저 선택해야 주변 목록을 보여주고 요약으로 포커스를 옮긴다', async () => {
-    const currentFetch = globalThis.fetch;
-    const liveConfig = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-      if (String(input).endsWith('/api/config')) {
-        return Response.json({ demo: false, configured: true, demoOrigin });
-      }
-      return currentFetch(input, init);
-    });
-    try {
-      const user = await setup(false);
-      expect(screen.queryByRole('region', { name: '주변 장소 목록' })).toBeNull();
-      expect(screen.queryByRole('button', { name: /순서대로 동선 짜기/ })).toBeNull();
-      await user.type(screen.getByLabelText('출발 장소 검색'), '성수역');
-      await user.click(screen.getByRole('button', { name: '장소 검색' }));
-      await user.click(
-        await within(await screen.findByRole('region', { name: '출발 장소 검색 결과' })).findByRole(
-          'button',
-          { name: /성수역/ },
-        ),
-      );
-      await screen.findByRole('button', { name: '작은 식탁 담기' });
-      expect(screen.queryByRole('textbox', { name: '출발 장소 검색' })).toBeNull();
-      const summary = screen.getByRole('button', { name: '출발·도착점 수정' });
-      await waitFor(() => expect(document.activeElement).toBe(summary));
-      await user.click(summary);
-      const sheet = screen.getByRole('dialog', { name: '출발·도착점 수정' });
-      expect(sheet.contains(document.activeElement)).toBe(true);
-      await user.keyboard('{Escape}');
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-      expect(document.activeElement).toBe(summary);
-    } finally {
-      liveConfig.mockRestore();
-    }
+    const user = await setup(false);
+    expect(screen.queryByRole('region', { name: '주변 장소 목록' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /순서대로 동선 짜기/ })).toBeNull();
+    await user.type(screen.getByLabelText('출발 장소 검색'), '성수역');
+    await user.click(screen.getByRole('button', { name: '장소 검색' }));
+    await user.click(
+      await within(await screen.findByRole('region', { name: '출발 장소 검색 결과' })).findByRole(
+        'button',
+        { name: /성수역/ },
+      ),
+    );
+    await screen.findByRole('button', { name: '작은 식탁 담기' });
+    expect(screen.queryByRole('textbox', { name: '출발 장소 검색' })).toBeNull();
+    const summary = screen.getByRole('button', { name: '출발·도착점 수정' });
+    await waitFor(() => expect(document.activeElement).toBe(summary));
+    await user.click(summary);
+    const sheet = screen.getByRole('dialog', { name: '출발·도착점 수정' });
+    expect(sheet.contains(document.activeElement)).toBe(true);
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(document.activeElement).toBe(summary);
   });
 
   it('첫 단계에서 모두 선택하고 동선을 만든 뒤 돌아와도 선택을 유지한다', async () => {

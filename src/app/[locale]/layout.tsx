@@ -65,21 +65,8 @@ export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Pr
 export default async function LocaleLayout({ children, params }: LayoutProps<'/[locale]'>) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const adsEnabled =
-    process.env.NODE_ENV === 'production' &&
-    process.env.VERCEL_ENV !== 'preview' &&
-    process.env.ADSENSE_ENABLED !== 'false';
   return (
     <html lang={locale}>
-      <head>
-        {adsEnabled ? (
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-            crossOrigin="anonymous"
-          />
-        ) : null}
-      </head>
       <body>
         <I18nProvider initialLocale={locale}>
           <QueryProvider>{children}</QueryProvider>

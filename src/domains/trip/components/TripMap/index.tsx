@@ -2,10 +2,10 @@ import './style.css';
 import type { ComponentProps } from 'react';
 import { Route, Footprints } from 'lucide-react';
 import { DemoMap } from '../DemoMap';
-import { KakaoMap } from '../KakaoMap';
+import { GoogleMap } from '../GoogleMap';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 
-type Props = ComponentProps<typeof KakaoMap> & { demo: boolean };
+type Props = ComponentProps<typeof GoogleMap> & { demo: boolean };
 export function TripMap({
   demo,
   ref,
@@ -18,7 +18,7 @@ export function TripMap({
   onSelect,
 }: Props) {
   const { t } = useI18n();
-  const MapComponent = demo ? DemoMap : KakaoMap;
+  const MapComponent = demo ? DemoMap : GoogleMap;
   return (
     <>
       <MapComponent
@@ -35,7 +35,7 @@ export function TripMap({
         <span className="live-dot" />
         {origin ? t('map.around', { name: origin.name }) : t('map.question')}
         <span className="map-label-divider" />
-        {demo ? t('map.demoNeighborhood') : t('map.kakao')}
+        {demo ? t('map.demoNeighborhood') : t('map.google')}
       </div>
       <div className="map-legend">
         <span>

@@ -14,6 +14,7 @@ import {
 import type { Place } from '../../models/model-trip';
 import { tripQueries } from '../../queries/tripQueries';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { PlaceAttributions } from '../PlaceAttributions';
 import { localizeTripText } from '../../i18n/localize-trip-text';
 
 interface Props {
@@ -26,7 +27,7 @@ export function DestinationPicker({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
-  const search = useQuery(tripQueries.search(query));
+  const search = useQuery(tripQueries.search(query, locale));
 
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
@@ -126,6 +127,7 @@ export function DestinationPicker({ value, onChange }: Props) {
                 <p className="py-4 text-sm text-muted-foreground">{t('destination.hint')}</p>
               )}
             </div>
+            <PlaceAttributions places={search.data ?? []} />
           </DialogContent>
         </Dialog>
         {value ? (

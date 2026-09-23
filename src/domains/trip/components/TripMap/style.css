@@ -12,7 +12,7 @@
     overflow: hidden;
   }
   .demo-canvas,
-  .kakao-canvas {
+  .google-canvas {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -222,8 +222,8 @@
     transform: translate(-50%, 0);
     pointer-events: auto;
   }
-  .kakao-canvas :has(> .map-place-marker:hover),
-  .kakao-canvas :has(> .map-place-marker:focus-within) {
+  .google-canvas :has(> .map-place-marker:hover),
+  .google-canvas :has(> .map-place-marker:focus-within) {
     z-index: 20 !important;
   }
   .map-place-preview-category {

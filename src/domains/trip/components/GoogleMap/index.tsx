@@ -3,14 +3,13 @@ import type { RouteMapHandle } from '../../utils/route-highlight';
 import { Button } from '@/common/design-system/components/Button';
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { Crosshair, Minus, Plus } from 'lucide-react';
-import { loadKakaoMap } from '../../../../common/maps/kakao-loader';
+import { loadGoogleMap } from '../../../../common/maps/google-loader';
 import type { Category, Itinerary, Place } from '../../models/model-trip';
-import { getKakaoPlaceDetailUrl } from '../../utils/place-detail';
+import { getAttributionUrl, getPlaceDetailUrl } from '../../utils/place-detail';
 import { distanceMeters, formatDistance } from '../../utils/route-order';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 import type { MessageKey, MessageValues } from '@/common/i18n/messages';
 import { categoryMessageKeys } from '../../i18n/trip-message-keys';
-import { localizeTripText } from '../../i18n/localize-trip-text';
 
 const categoryPinLabels: Record<Category, string> = {
   restaurant: 'F',
@@ -19,23 +18,89 @@ const categoryPinLabels: Record<Category, string> = {
   bar: 'B',
 };
 
+function transitLineStyle(mode: string): google.maps.PolylineOptions {
+  return mode === 'walk' || mode === 'car'
+    ? {}
+    : {
+        strokeOpacity: 0,
+        icons: [
+          {
+            icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.9, scale: 2 },
+            offset: '0',
+            repeat: '12px',
+          },
+        ],
+      };
+}
+
+function createHtmlOverlay({
+  map,
+  position,
+  content,
+  xAnchor = 0.5,
+  yAnchor = 1,
+  zIndex,
+}: {
+  map: google.maps.Map;
+  position: google.maps.LatLng;
+  content: HTMLElement;
+  xAnchor?: number;
+  yAnchor?: number;
+  zIndex: number;
+}) {
+  class HtmlOverlay extends google.maps.OverlayView {
+    private position = position;
+    private element = document.createElement('div');
+    constructor() {
+      super();
+      this.element.style.position = 'absolute';
+      this.element.style.zIndex = String(zIndex);
+      this.element.style.transform = `translate(${-xAnchor * 100}%, ${-yAnchor * 100}%)`;
+      this.element.append(content);
+      google.maps.OverlayView.preventMapHitsAndGesturesFrom(this.element);
+      this.setMap(map);
+    }
+    onAdd() {
+      this.getPanes()?.overlayMouseTarget.append(this.element);
+    }
+    draw() {
+      const point = this.getProjection()?.fromLatLngToDivPixel(this.position);
+      if (!point) return;
+      this.element.style.left = `${point.x}px`;
+      this.element.style.top = `${point.y}px`;
+    }
+    onRemove() {
+      this.element.remove();
+    }
+    setPosition(next: google.maps.LatLng) {
+      this.position = next;
+      this.draw();
+    }
+  }
+  return new HtmlOverlay();
+}
+
 function fitMapBounds(
-  currentMap: kakao.maps.Map,
-  targetBounds: kakao.maps.LatLngBounds,
+  currentMap: google.maps.Map,
+  targetBounds: google.maps.LatLngBounds,
   element: HTMLElement | null,
 ) {
+  if (targetBounds.getNorthEast().equals(targetBounds.getSouthWest())) {
+    currentMap.setCenter(targetBounds.getCenter());
+    currentMap.setZoom(15);
+    return;
+  }
   const verticalInset = Math.min(65, Math.max(24, Math.round((element?.clientHeight ?? 650) / 10)));
   const horizontalInset = Math.min(
     85,
     Math.max(24, Math.round((element?.clientWidth ?? 650) / 10)),
   );
-  currentMap.setBounds(
-    targetBounds,
-    verticalInset,
-    horizontalInset,
-    verticalInset,
-    horizontalInset,
-  );
+  currentMap.fitBounds(targetBounds, {
+    top: verticalInset,
+    right: horizontalInset,
+    bottom: verticalInset,
+    left: horizontalInset,
+  });
 }
 
 function createMapPlacePreview(
@@ -67,7 +132,7 @@ function createMapPlacePreview(
     });
     meta.append(distance);
   }
-  const detailUrl = getKakaoPlaceDetailUrl(place.url);
+  const detailUrl = getPlaceDetailUrl(place.url);
   if (detailUrl) {
     const detail = document.createElement('a');
     detail.href = detailUrl;
@@ -78,6 +143,25 @@ function createMapPlacePreview(
     meta.append(detail);
   }
   preview.append(category, name, address, meta);
+  if (place.attributions?.length) {
+    const attribution = document.createElement('p');
+    attribution.className = 'map-place-preview-address';
+    place.attributions.forEach((provider, index) => {
+      if (index > 0) attribution.append(' · ');
+      const url = getAttributionUrl(provider.url);
+      if (!url) {
+        attribution.append(provider.name);
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = provider.name;
+      attribution.append(link);
+    });
+    preview.append(attribution);
+  }
   return preview;
 }
 
@@ -92,7 +176,7 @@ interface Props {
   onSelect: (place: Place) => void;
 }
 
-export function KakaoMap({
+export function GoogleMap({
   ref,
   origin,
   destination,
@@ -104,18 +188,19 @@ export function KakaoMap({
 }: Props) {
   const { locale, t } = useI18n();
   const container = useRef<HTMLDivElement>(null);
-  const map = useRef<kakao.maps.Map | null>(null);
-  const bounds = useRef<kakao.maps.LatLngBounds | null>(null);
+  const map = useRef<google.maps.Map | null>(null);
+  const bounds = useRef<google.maps.LatLngBounds | null>(null);
   const lastFramed = useRef<{
     origin: Place | null;
     destination: Place | null;
     itinerary: Itinerary | null;
   } | null>(null);
-  const activeBounds = useRef<kakao.maps.LatLngBounds | null>(null);
+  const activeBounds = useRef<google.maps.LatLngBounds | null>(null);
   const clearHighlight = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const handlePlaceSelect = useEffectEvent(onSelect);
+  const handleMapFailure = useEffectEvent(() => setError(t('map.loadFailed')));
   useImperativeHandle(
     ref,
     () => ({
@@ -124,27 +209,28 @@ export function KakaoMap({
         if (!ready || !currentMap) return;
         clearHighlight.current();
         activeBounds.current = null;
-        const focusBounds = new kakao.maps.LatLngBounds();
+        const focusBounds = new google.maps.LatLngBounds();
         const highlightColor = getComputedStyle(container.current ?? document.documentElement)
           .getPropertyValue('--route-highlight')
           .trim();
         const lines = highlight.segments
           .filter((segment) => segment.points.length > 1)
           .map((segment) => {
-            const path = segment.points.map((point) => new kakao.maps.LatLng(point.lat, point.lng));
+            const path = segment.points.map(
+              (point) => new google.maps.LatLng(point.lat, point.lng),
+            );
             path.forEach((point) => focusBounds.extend(point));
-            return new kakao.maps.Polyline({
+            return new google.maps.Polyline({
               map: currentMap,
               path,
               strokeWeight: 9,
               strokeColor: highlightColor,
               strokeOpacity: 0.95,
-              strokeStyle:
-                segment.mode === 'walk' || segment.mode === 'car' ? 'solid' : 'shortdash',
+              ...transitLineStyle(segment.mode),
               zIndex: 10,
             });
           });
-        const destination = new kakao.maps.LatLng(
+        const destination = new google.maps.LatLng(
           highlight.destination.lat,
           highlight.destination.lng,
         );
@@ -159,7 +245,7 @@ export function KakaoMap({
         label.className = 'route-playback-label';
         label.textContent = t('map.moving');
         marker.append(dot, label);
-        const overlay = new kakao.maps.CustomOverlay({
+        const overlay = createHtmlOverlay({
           map: currentMap,
           position: destination,
           content: marker,
@@ -170,7 +256,7 @@ export function KakaoMap({
         activeBounds.current = focusBounds;
         fitMapBounds(currentMap, focusBounds, container.current);
         const stopPlayback = playRoute(highlight.segments, (position) => {
-          overlay.setPosition(new kakao.maps.LatLng(position.lat, position.lng));
+          overlay.setPosition(new google.maps.LatLng(position.lat, position.lng));
         });
         clearHighlight.current = () => {
           stopPlayback();
@@ -184,29 +270,38 @@ export function KakaoMap({
 
   useEffect(() => {
     let active = true;
-    const key: unknown = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+    const handleFailure = () => {
+      if (active) handleMapFailure();
+    };
+    window.addEventListener('neartrip-google-map-error', handleFailure);
+    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (typeof key !== 'string' || !key) {
       setError(t('map.keyMissing'));
-      return;
+      return () => window.removeEventListener('neartrip-google-map-error', handleFailure);
     }
-    loadKakaoMap(key)
+    loadGoogleMap(key, locale)
       .then(() => {
         if (!active || !container.current) return;
-        map.current = new kakao.maps.Map(container.current, {
-          center: new kakao.maps.LatLng(37.54458, 127.05598),
-          level: 5,
+        map.current = new google.maps.Map(container.current, {
+          center: new google.maps.LatLng(37.54458, 127.05598),
+          zoom: 15,
+          maxZoom: 19,
+          disableDefaultUI: true,
+          clickableIcons: false,
+          gestureHandling: 'cooperative',
+          keyboardShortcuts: true,
         });
         setReady(true);
       })
-      .catch((cause: unknown) => {
-        if (active)
-          setError(
-            cause instanceof Error ? localizeTripText(locale, cause.message) : t('map.loadFailed'),
-          );
+      .catch(() => {
+        if (active) setError(t('map.loadFailed'));
       });
     return () => {
       active = false;
+      window.removeEventListener('neartrip-google-map-error', handleFailure);
       clearHighlight.current();
+      if (map.current) google.maps.event.clearInstanceListeners(map.current);
+      map.current = null;
     };
   }, []);
 
@@ -216,15 +311,15 @@ export function KakaoMap({
     if (!ready || !currentMap || !element) return;
     const observer = new ResizeObserver(() => {
       const center = currentMap.getCenter();
-      const level = currentMap.getLevel();
-      currentMap.relayout();
+      const level = currentMap.getZoom();
+      google.maps.event.trigger(currentMap, 'resize');
       const routeBounds = activeBounds.current ?? bounds.current;
       if (itinerary && routeBounds) {
         fitMapBounds(currentMap, routeBounds, element);
         return;
       }
-      currentMap.setLevel(level, { animate: false, anchor: center });
-      currentMap.setCenter(center);
+      if (level !== undefined) currentMap.setZoom(level);
+      if (center) currentMap.setCenter(center);
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -233,9 +328,9 @@ export function KakaoMap({
   useEffect(() => {
     const currentMap = map.current;
     if (!ready || !currentMap) return;
-    const overlays: kakao.maps.CustomOverlay[] = [];
-    const lines: kakao.maps.Polyline[] = [];
-    const viewBounds = new kakao.maps.LatLngBounds();
+    const overlays: ReturnType<typeof createHtmlOverlay>[] = [];
+    const lines: google.maps.Polyline[] = [];
+    const viewBounds = new google.maps.LatLngBounds();
     const visible = new Map(
       [
         ...places,
@@ -279,10 +374,10 @@ export function KakaoMap({
       pin.setAttribute('aria-describedby', previewId);
       if (canToggle) pin.onclick = () => handlePlaceSelect(place);
       marker.append(pin, createMapPlacePreview(place, origin, previewId, t));
-      const position = new kakao.maps.LatLng(place.lat, place.lng);
+      const position = new google.maps.LatLng(place.lat, place.lng);
       if (!itinerary || isOrigin || isDestination || index >= 0) viewBounds.extend(position);
       const zIndex = isOrigin || isDestination ? 5 : index >= 0 ? 4 : 3;
-      const overlay = new kakao.maps.CustomOverlay({
+      const overlay = createHtmlOverlay({
         map: currentMap,
         position,
         content: marker,
@@ -294,10 +389,10 @@ export function KakaoMap({
     const palette = getComputedStyle(document.documentElement);
     for (const leg of itinerary?.legs ?? []) {
       for (const segment of leg.segments) {
-        const path = segment.points.map((point) => new kakao.maps.LatLng(point.lat, point.lng));
+        const path = segment.points.map((point) => new google.maps.LatLng(point.lat, point.lng));
         path.forEach((point) => viewBounds.extend(point));
         lines.push(
-          new kakao.maps.Polyline({
+          new google.maps.Polyline({
             map: currentMap,
             path,
             strokeWeight: 5,
@@ -308,7 +403,7 @@ export function KakaoMap({
                   ? palette.getPropertyValue('--route-bus').trim()
                   : palette.getPropertyValue('--route-rail').trim(),
             strokeOpacity: 0.9,
-            strokeStyle: segment.mode === 'walk' || segment.mode === 'car' ? 'solid' : 'shortdash',
+            ...transitLineStyle(segment.mode),
           }),
         );
       }
@@ -336,7 +431,7 @@ export function KakaoMap({
 
   return (
     <>
-      <div ref={container} className="kakao-canvas" aria-label={t('map.kakaoLabel')} />
+      <div ref={container} className="google-canvas" aria-label={t('map.googleLabel')} />
       {error ? (
         <div className="map-message" role="alert">
           <strong>{t('map.checkConnection')}</strong>
@@ -355,7 +450,7 @@ export function KakaoMap({
           aria-label={t('map.zoomIn')}
           onClick={() => {
             const current = map.current;
-            if (current) current.setLevel(current.getLevel() - 1);
+            if (current) current.setZoom((current.getZoom() ?? 15) + 1);
           }}
         >
           <Plus size={18} />
@@ -366,7 +461,7 @@ export function KakaoMap({
           aria-label={t('map.zoomOut')}
           onClick={() => {
             const current = map.current;
-            if (current) current.setLevel(current.getLevel() + 1);
+            if (current) current.setZoom((current.getZoom() ?? 15) - 1);
           }}
         >
           <Minus size={18} />

@@ -6,12 +6,12 @@ const copyByLocale = {
   ko: {
     title: '개인정보처리방침',
     description: 'neartrip의 서비스 데이터와 Google 광고 쿠키 사용 안내입니다.',
-    updated: '최종 수정: 2026년 9월 21일',
+    updated: '최종 수정: 2026년 9월 23일',
     back: '가까이로 돌아가기',
     sections: [
       {
         title: '서비스 이용 정보',
-        body: 'neartrip은 회원가입 없이 이용합니다. 장소 검색어, 선택한 장소와 좌표, 이동 조건은 주변 장소 검색과 동선 생성을 위해 서버로 전송됩니다. 카카오와 공공 관광정보 서비스에 검색에 필요한 정보를 전달합니다.',
+        body: 'neartrip은 회원가입 없이 이용합니다. 장소 검색어, 선택한 장소와 좌표, 이동 조건은 주변 장소 검색과 동선 생성을 위해 서버로 전송됩니다. Google Maps와 Places에 지도·장소 검색 정보를 전달합니다. 카카오에는 이동 경로 조회 정보를, 공공 관광정보 서비스에는 주변 관광정보 조회에 필요한 정보를 전달합니다.',
       },
       {
         title: '접속 정보와 오류 기록',
@@ -28,6 +28,7 @@ const copyByLocale = {
     ],
     linksTitle: '개인정보와 광고 설정',
     googlePrivacy: 'Google 개인정보처리방침',
+    googleMapsTerms: 'Google Maps 이용약관',
     googlePartners: 'Google 파트너 사이트의 데이터 사용',
     adSettings: 'Google 광고 설정',
     adChoices: '제3자 개인 맞춤 광고 선택',
@@ -37,12 +38,12 @@ const copyByLocale = {
   en: {
     title: 'Privacy policy',
     description: 'How neartrip uses service data and Google advertising cookies.',
-    updated: 'Last updated: September 21, 2026',
+    updated: 'Last updated: September 23, 2026',
     back: 'Back to neartrip',
     sections: [
       {
         title: 'Information used by the service',
-        body: 'neartrip does not require an account. Search terms, selected places and coordinates, and travel preferences are sent to our server to find nearby places and create routes. We send the information needed for these searches to Kakao and public tourism services.',
+        body: 'neartrip does not require an account. Search terms, selected places and coordinates, and travel preferences are sent to our server to find nearby places and create routes. We send map and place searches to Google Maps and Places, route requests to Kakao, and nearby tourism queries to public tourism services.',
       },
       {
         title: 'Access information and error logs',
@@ -59,6 +60,7 @@ const copyByLocale = {
     ],
     linksTitle: 'Privacy information and advertising settings',
     googlePrivacy: 'Google Privacy Policy',
+    googleMapsTerms: 'Google Maps Terms of Service',
     googlePartners: 'How Google uses data from partner sites',
     adSettings: 'Google Ads Settings',
     adChoices: 'Third-party advertising choices',
@@ -94,6 +96,7 @@ export default async function PrivacyPage({ params }: PageProps<'/[locale]/priva
   if (!isLocale(locale)) notFound();
   const copy = copyByLocale[locale];
   const links = [
+    { label: copy.googleMapsTerms, href: 'https://maps.google.com/help/terms_maps/' },
     { label: copy.googlePrivacy, href: 'https://policies.google.com/privacy' },
     { label: copy.googlePartners, href: 'https://policies.google.com/technologies/partner-sites' },
     { label: copy.adSettings, href: 'https://adssettings.google.com/' },

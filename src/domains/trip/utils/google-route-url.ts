@@ -11,6 +11,9 @@ export function getGoogleRouteUrl(leg: Leg) {
     destination: routeCoordinate(leg.to),
   });
 
+  if (leg.from.id.startsWith('google:')) searchParams.set('origin_place_id', leg.from.id.slice(7));
+  if (leg.to.id.startsWith('google:')) searchParams.set('destination_place_id', leg.to.id.slice(7));
+
   if (leg.travelMode === 'driving' || leg.segments.some((segment) => segment.mode === 'car')) {
     searchParams.set('travelmode', 'driving');
   } else if (leg.segments.length > 0) {

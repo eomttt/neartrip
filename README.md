@@ -18,19 +18,24 @@ npm run dev
 키가 없으면 가상 장소 8곳과 개략도를 쓰는 예시 모드로 실행됩니다.
 첫 화면과 `/privacy`, `/guide`는 브라우저의 선호 언어 순서에 따라 한국어 또는 영어로 열립니다. `next-i18next`가 `Accept-Language`의 우선순위를 반영하며 지원 언어가 없으면 영어로 표시합니다. 언어 전환 버튼과 언어 저장 쿠키는 사용하지 않습니다. `/ko`, `/en`으로 직접 들어오면 주소에 지정된 언어로 열립니다.
 
-## 카카오 연결
+## Google 지도와 장소 검색
 
-`.env.example`을 참고해 `.env.local`에 설정합니다.
+`.env.example`을 참고해 `.env.local`에 설정합니다. 1Password 마운트는 파일을 복사하지 않고 Environment에서 갱신합니다.
 
 ```dotenv
-KAKAO_REST_API_KEY=카카오_REST_API_키
-NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY=카카오_JavaScript_키
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=Google_브라우저_키
+GOOGLE_PLACES_API_KEY=Google_서버_키
+KAKAO_REST_API_KEY=카카오_경로_REST_키
 DEMO_MODE=false
 ```
 
-REST 키는 서버 전용이며 Vercel에서는 Secret으로 등록합니다. JavaScript 키는 브라우저에 공개되는 Config입니다. 카카오 JavaScript 키의 허용 도메인에 로컬 주소와 배포 주소를 등록하세요. 키 변경 후에는 다시 빌드합니다.
+Google Cloud 프로젝트에서 결제 계정과 Maps JavaScript API, Places API (New)가 필요합니다. 두 Google 키를 분리합니다. 공개 키는 Maps JavaScript API와 웹사이트 리퍼러로 제한하고 `http://127.0.0.1:5173/*`, `https://neartrip-one.vercel.app/*` 및 사용하는 Preview 도메인을 허용합니다. 서버 키는 Places API (New)만 허용하며 `NEXT_PUBLIC_` 이름을 쓰지 않습니다. Vercel의 서버 키는 Secret으로 등록합니다. 공개 키 변경 후에는 다시 빌드합니다.
 
-`.env.local`은 Git에서 제외됩니다. 기존 1Password 마운트의 `VITE_KAKAO_JAVASCRIPT_KEY`도 호환합니다.
+지도·검색·주변 장소에 화면 언어 `ko` 또는 `en`을 전달합니다. Google에 해당 언어의 번역이 없는 장소는 현지 언어로 반환될 수 있습니다. 일반 검색은 최대 8곳, 주변 검색은 네 카테고리에 각각 최대 20곳을 요청하고 중복 장소를 합칩니다. 한국 밖 결과와 반경 밖 결과는 제외합니다. 주변의 모든 장소를 수집하는 기능은 아닙니다. 검색 필드만 요청하며 평점·사진·리뷰는 가져오지 않습니다. 검색 요청에 실패해도 자동으로 과금 요청을 반복하지 않습니다.
+
+키가 일부만 등록된 경우에는 가상 결과로 전환하지 않고 설정 오류를 표시합니다. 장소·지도 키는 Google로 교체했고 한국 이동 경로 조회는 기존 카카오 API를 유지합니다. 관광청의 행사·반려동물 정보도 기존 원문을 유지합니다.
+
+[Google 키 제한](https://developers.google.com/maps/api-security-best-practices) · [Places 요금](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing) · [한국 지도 지원 범위](https://developers.google.com/maps/coverage)
 
 차량·택시 이동은 같은 REST API 키로 [카카오모빌리티 자동차 길찾기](https://developers.kakaomobility.com/guide/navi-api/directions)를 조회합니다. 현재 교통 기준 예상 시간과 도로 경로를 표시합니다. 주차·택시 대기 시간은 포함하지 않습니다.
 
@@ -78,8 +83,8 @@ npm run check
 npm run format:check
 ```
 
-Vercel의 Next.js 프리셋으로 화면과 API를 함께 배포합니다. Production과 Preview의 환경변수·카카오 허용 도메인은 각각 설정합니다. `main`에 푸시하면 Vercel의 GitHub 연결을 통해 자동 배포됩니다.
+Vercel의 Next.js 프리셋으로 화면과 API를 함께 배포합니다. Production과 Preview의 환경변수·Google 허용 리퍼러는 각각 설정합니다. `main`에 푸시하면 Vercel의 GitHub 연결을 통해 자동 배포됩니다.
 
 API 요청 제한은 인스턴스별 분당 60회입니다. 알려진 경로 응답 오류는 [#7](https://github.com/eomttt/neartrip/issues/7)과 [#9](https://github.com/eomttt/neartrip/issues/9)에서 추적합니다.
 
-오류가 발생하면 화면의 추적 ID로 Vercel Logs를 검색합니다. `api_failure` 로그에는 요청 본문, 구간별 카카오 응답과 관광정보 응답, 검증 실패 위치와 최종 응답이 담깁니다. 키·인증 정보는 가리고 긴 좌표 목록은 일부만 남깁니다. 정상 요청은 상태와 소요 시간만 기록합니다.
+오류가 발생하면 화면의 추적 ID로 Vercel Logs를 검색합니다. `api_failure` 로그에는 요청 본문, 구간별 카카오 응답과 관광정보 응답, 검증 실패 위치와 최종 응답이 담깁니다. 키·인증 정보는 가리고 긴 좌표 목록은 일부만 남깁니다. Google 장소 응답 원문은 공급자 로그에 저장하지 않습니다. 정상 요청은 상태와 소요 시간만 기록합니다.

@@ -19,6 +19,9 @@ export const placeSchema = coordinateSchema.extend({
   category: categorySchema,
   description: z.string().max(300),
   url: z.string().default(''),
+  attributions: z
+    .array(z.object({ name: z.string().max(300), url: z.string().optional() }))
+    .optional(),
   tourism: z
     .object({
       kind: z.enum(['festival', 'pet']),

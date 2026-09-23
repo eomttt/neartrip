@@ -37,12 +37,12 @@
   "devDependencies": {
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.0",
+    "@types/google.maps": "^3.66.3",
     "@types/node": "^22.15.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^26.1.0",
-    "kakao.maps.d.ts": "^0.1.40",
     "prettier": "^3.6.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.0",

@@ -8,6 +8,7 @@ import {
   type DiscoveryResult,
   type DiscoveryMode,
 } from '../models/model-discovery';
+import type { Locale } from '@/common/i18n/locale';
 import { koreaDate } from '../utils/korea-date';
 
 import { crowdingResponseSchema } from '../models/model-crowding';
@@ -66,20 +67,31 @@ export const tripQueries = {
       staleTime: Infinity,
     }),
   searches: () => [...tripQueries.all, 'search'],
-  search: (query: string) =>
+  search: (query: string, locale: Locale = 'ko') =>
     queryOptions({
-      queryKey: [...tripQueries.searches(), query],
+      queryKey: [...tripQueries.searches(), query, locale],
       enabled: query.trim().length > 0,
+      retry: false,
       queryFn: async ({ signal }) =>
-        z
-          .array(placeSchema)
-          .parse(await requestJson(`/api/search?${new URLSearchParams({ q: query })}`, { signal })),
+        z.array(placeSchema).parse(
+          await requestJson(`/api/search?${new URLSearchParams({ q: query, locale })}`, {
+            signal,
+          }),
+        ),
     }),
   nearbyLists: () => [...tripQueries.all, 'nearby'],
-  nearbyList: (origin: Place | null, radius: number, enabled = true) =>
+  nearbyList: (origin: Place | null, radius: number, enabled = true, locale: Locale = 'ko') =>
     queryOptions({
-      queryKey: [...tripQueries.nearbyLists(), origin?.id, origin?.lat, origin?.lng, radius],
+      queryKey: [
+        ...tripQueries.nearbyLists(),
+        origin?.id,
+        origin?.lat,
+        origin?.lng,
+        radius,
+        locale,
+      ],
       enabled: origin !== null && enabled,
+      retry: false,
       staleTime: 60_000,
       queryFn: async ({ signal }) => {
         if (!origin) return [];
@@ -87,6 +99,7 @@ export const tripQueries = {
           lat: String(origin.lat),
           lng: String(origin.lng),
           radius: String(radius),
+          locale,
         });
         return z.array(placeSchema).parse(await requestJson(`/api/nearby?${params}`, { signal }));
       },

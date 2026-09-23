@@ -13,7 +13,7 @@
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": ["node", "kakao.maps.d.ts"],
+    "types": ["node", "google.maps"],
     "paths": {
       "@/*": ["./src/*"]
     },

@@ -7,25 +7,31 @@ import { demoOrigin } from '../../../../../server/demo';
 
 afterEach(cleanup);
 
-it('카카오 장소 상세 페이지를 HTTPS 새 창 링크로 제공한다', () => {
+it('Google 장소 상세 페이지를 HTTPS 새 창 링크로 제공한다', () => {
   renderWithI18n(
     <PlaceCard
-      place={{ ...demoOrigin, name: '확인할 장소', url: 'http://place.map.kakao.com/12345' }}
+      place={{
+        ...demoOrigin,
+        name: '확인할 장소',
+        url: 'https://www.google.com/maps/search/?api=1&query=place&query_place_id=test-place',
+      }}
       origin={demoOrigin}
       isSelected={false}
       isDisabled={false}
       onSelect={vi.fn()}
     />,
   );
-  const link = screen.getByRole('link', { name: '확인할 장소 카카오맵 후기·상세 (새 창)' });
-  expect(link.getAttribute('href')).toBe('https://place.map.kakao.com/12345');
+  const link = screen.getByRole('link', { name: '확인할 장소 Google Maps 후기·상세 (새 창)' });
+  expect(link.getAttribute('href')).toBe(
+    'https://www.google.com/maps/search/?api=1&query=place&query_place_id=test-place',
+  );
   expect(link.getAttribute('target')).toBe('_blank');
   expect(link.getAttribute('rel')).toContain('noopener');
   expect(screen.getByText(demoOrigin.address)).toBeTruthy();
 });
 
 it.each(['', 'javascript:alert(1)', 'https://example.com/12345'])(
-  '상세 주소가 없거나 카카오 장소 주소가 아니면 링크를 표시하지 않는다: %s',
+  '상세 주소가 없거나 Google 지도 주소가 아니면 링크를 표시하지 않는다: %s',
   (url) => {
     renderWithI18n(
       <PlaceCard

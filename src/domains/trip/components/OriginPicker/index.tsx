@@ -14,6 +14,7 @@ import {
 import { tripQueries } from '../../queries/tripQueries';
 import type { Place } from '../../models/model-trip';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { PlaceAttributions } from '../PlaceAttributions';
 import { localizeTripText } from '../../i18n/localize-trip-text';
 
 interface Props {
@@ -27,7 +28,7 @@ export function OriginPicker({ value, demo, onChange }: Props) {
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const search = useQuery(tripQueries.search(query));
+  const search = useQuery(tripQueries.search(query, locale));
   function handleOriginSelect(place: Place) {
     onChange(place);
     setShowSearch(false);
@@ -106,6 +107,7 @@ export function OriginPicker({ value, demo, onChange }: Props) {
               <p>{demo ? t('search.noResultsDemo') : t('search.noResults')}</p>
             )}
           </section>
+          <PlaceAttributions places={search.data ?? []} />
         </DialogContent>
       </Dialog>
       {value ? (

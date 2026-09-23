@@ -54,22 +54,18 @@ describe('Route Handler 요청 경계', () => {
     expect(response.status).toBe(500);
     expect(await response.text()).not.toContain('private implementation detail');
   });
-  it('새 공개 키와 기존 1Password 키 이름을 모두 인식하고 값을 반환하지 않는다', () => {
+  it('Google 공개 키와 서버 키가 모두 있어야 설정 완료이며 키 값은 반환하지 않는다', () => {
     vi.stubEnv('DEMO_MODE', 'false');
-    vi.stubEnv('KAKAO_REST_API_KEY', 'test-rest-value');
-    vi.stubEnv('VITE_KAKAO_JAVASCRIPT_KEY', 'test-legacy-value');
-    vi.stubEnv('NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY', '');
-    expect(getTripConfig()).toMatchObject({ configured: true, demo: false });
-    vi.stubEnv('VITE_KAKAO_JAVASCRIPT_KEY', '');
-    vi.stubEnv('NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY', 'test-public-value');
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', 'test-server-value');
+    vi.stubEnv('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', 'test-browser-value');
     expect(getTripConfig()).toMatchObject({ configured: true, demo: false });
     expect(JSON.stringify(getTripConfig())).not.toContain('test-');
   });
   it('키가 하나만 있으면 예시 모드로 숨기지 않는다', () => {
     vi.stubEnv('DEMO_MODE', 'false');
     vi.stubEnv('KAKAO_REST_API_KEY', 'test-rest-value');
-    vi.stubEnv('VITE_KAKAO_JAVASCRIPT_KEY', '');
-    vi.stubEnv('NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY', '');
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', '');
+    vi.stubEnv('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', '');
     expect(getTripConfig()).toMatchObject({ configured: false, demo: false });
   });
 });

@@ -14,7 +14,7 @@ import {
   Wine,
 } from 'lucide-react';
 import type { Category, Place } from '../../models/model-trip';
-import { getKakaoPlaceDetailUrl } from '../../utils/place-detail';
+import { getPlaceDetailUrl } from '../../utils/place-detail';
 import { distanceMeters, formatDistance } from '../../utils/route-order';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 import { categoryMessageKeys } from '../../i18n/trip-message-keys';
@@ -38,7 +38,7 @@ const categoryIcons: Record<Category, typeof Coffee> = {
 
 export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, crowding }: Props) {
   const { locale, t } = useI18n();
-  const detailUrl = getKakaoPlaceDetailUrl(place.url);
+  const detailUrl = getPlaceDetailUrl(place.url);
   const Icon = categoryIcons[place.category];
   return (
     <article className={`place-card ${isSelected ? 'is-selected' : ''}`}>

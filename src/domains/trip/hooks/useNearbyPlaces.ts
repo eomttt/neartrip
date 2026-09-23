@@ -1,3 +1,4 @@
+import { useI18n } from '@/common/i18n/components/I18nProvider';
 import { useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { tripQueries } from '../queries/tripQueries';
@@ -35,6 +36,7 @@ export function useNearbyPlaces(
   destination: Place | null,
   initialRadius = 1_000,
 ) {
+  const { locale } = useI18n();
   const [categories, setCategories] = useState<Category[]>(() => [...categorySchema.options]);
   const [radius, setRadius] = useState(initialRadius);
   const [crowdingLevels, setCrowdingLevels] = useState<CrowdingLevel[]>([]);
@@ -46,7 +48,7 @@ export function useNearbyPlaces(
     const timer = setInterval(() => setMinute((value) => value + 1), 60_000);
     return () => clearInterval(timer);
   }, []);
-  const nearby = useQuery(tripQueries.nearbyList(origin, radius, !festivalOnly));
+  const nearby = useQuery(tripQueries.nearbyList(origin, radius, !festivalOnly, locale));
   const festivals = useInfiniteQuery(
     tripQueries.discovery(origin, 'festival', radius, festivalOnly),
   );

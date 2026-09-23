@@ -2,11 +2,11 @@
 import { renderWithI18n } from '@/common/i18n/test-utils';
 import { act, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { KakaoMap } from '.';
+import { GoogleMap } from '.';
 import { demoOrigin, demoPlaces } from '../../../../../server/demo';
 
-vi.mock('../../../../common/maps/kakao-loader', () => ({
-  loadKakaoMap: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../../../common/maps/google-loader', () => ({
+  loadGoogleMap: vi.fn().mockResolvedValue(undefined),
 }));
 
 afterEach(() => {
@@ -27,7 +27,8 @@ it('지도 크기가 바뀌거나 장소를 담아도 현재 확대 상태를 �
   const setLevel = vi.fn();
   const getLevel = vi.fn().mockReturnValue(4);
   const overlayContents: HTMLElement[] = [];
-  vi.stubEnv('NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY', 'test-only-key');
+  const overlayPane = document.createElement('div');
+  vi.stubEnv('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', 'test-only-key');
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -38,16 +39,16 @@ it('지도 크기가 바뀌거나 장소를 담아도 현재 확대 상태를 �
       disconnect() {}
     },
   );
-  vi.stubGlobal('kakao', {
+  vi.stubGlobal('google', {
     maps: {
       Map: class {
         getCenter = getCenter;
-        relayout = relayout;
         setCenter = setCenter;
-        setBounds = setBounds;
-        setLevel = setLevel;
-        getLevel = getLevel;
+        fitBounds = setBounds;
+        setZoom = setLevel;
+        getZoom = getLevel;
       },
+      event: { trigger: relayout, clearInstanceListeners: vi.fn() },
       LatLng: class {
         constructor(
           public lat: number,
@@ -56,22 +57,39 @@ it('지도 크기가 바뀌거나 장소를 담아도 현재 확대 상태를 �
       },
       LatLngBounds: class {
         extend() {}
+        getNorthEast() {
+          return { equals: () => false };
+        }
+        getSouthWest() {
+          return {};
+        }
         isEmpty() {
           return false;
         }
       },
-      CustomOverlay: class {
-        constructor({ content }: { content: HTMLElement }) {
-          overlayContents.push(content);
+      OverlayView: class {
+        static preventMapHitsAndGesturesFrom(element: HTMLElement) {
+          overlayContents.push(element);
         }
-        setMap() {}
+        setMap(value: unknown) {
+          if (value) this.onAdd();
+          else this.onRemove();
+        }
+        onAdd() {}
+        onRemove() {}
+        getPanes() {
+          return { overlayMouseTarget: overlayPane };
+        }
+        getProjection() {
+          return { fromLatLngToDivPixel: () => ({ x: 10, y: 20 }) };
+        }
       },
     },
   });
   const onShowEntireRoute = vi.fn();
   const onSelect = vi.fn();
   const { rerender } = renderWithI18n(
-    <KakaoMap
+    <GoogleMap
       origin={demoOrigin}
       places={[place]}
       selected={[]}
@@ -90,14 +108,14 @@ it('지도 크기가 바뀌거나 장소를 담아도 현재 확대 상태를 �
     relayout.mock.invocationCallOrder[0] ?? 0,
   );
   expect(setBounds).not.toHaveBeenCalled();
-  expect(setLevel).toHaveBeenLastCalledWith(4, { animate: false, anchor: center });
+  expect(setLevel).toHaveBeenLastCalledWith(4);
   const pannedCenter = { lat: 37.57, lng: 127.09 };
   getCenter.mockReturnValue(pannedCenter);
   act(() => resize?.());
   expect(setCenter).toHaveBeenLastCalledWith(pannedCenter);
   expect(setBounds).not.toHaveBeenCalled();
   rerender(
-    <KakaoMap
+    <GoogleMap
       origin={demoOrigin}
       places={[place]}
       selected={[place]}
@@ -114,4 +132,6 @@ it('지도 크기가 바뀌거나 장소를 담아도 현재 확대 상태를 �
   expect(selectedPin.getAttribute('aria-pressed')).toBe('true');
   act(() => selectedPin.click());
   expect(onSelect).toHaveBeenCalledWith(place);
+  cleanup();
+  expect(overlayPane.children).toHaveLength(0);
 });

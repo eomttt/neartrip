@@ -21,6 +21,7 @@ import { categorySchema, type Category, type Place } from '../../models/model-tr
 import { PlaceCard } from '../PlaceCard';
 import { PlaceFilters, PlaceRadiusSelect } from '../PlaceFilters';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
+import { PlaceAttributions } from '../PlaceAttributions';
 import { localizeTripText } from '../../i18n/localize-trip-text';
 
 interface FilterSelection {
@@ -233,6 +234,7 @@ export function NearbyPlaces({
         </span>
         <span>{t('nearby.distanceOrder')}</span>
       </div>
+      <PlaceAttributions places={[...places, ...recommendations]} />
       <div
         className="place-list"
         role="region"

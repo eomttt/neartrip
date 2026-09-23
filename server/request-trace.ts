@@ -9,7 +9,7 @@ const secretField = /authorization|cookie|password|secret|token|api.?key|service
 
 type LogValue = null | boolean | number | string | LogValue[] | { [key: string]: LogValue };
 interface ProviderCall {
-  provider: 'kakao' | 'tourapi' | 'seoul';
+  provider: 'kakao' | 'tourapi' | 'seoul' | 'google';
   leg: number | null;
   api: string;
   params: LogValue;
@@ -113,7 +113,7 @@ export function withTraceLeg<T>(leg: number, action: () => Promise<T>): Promise<
 }
 
 export async function traceProviderCall<T>(
-  provider: 'kakao' | 'tourapi' | 'seoul',
+  provider: 'kakao' | 'tourapi' | 'seoul' | 'google',
   api: string,
   params: Record<string, string>,
   action: (record: (status: number, body: unknown) => void) => Promise<T>,
@@ -193,6 +193,7 @@ export async function traceApiRequest(
           },
           response: bodyForLog(await response.clone().json()),
           error: trace.error,
+          google: calls.filter((call) => call.provider === 'google'),
           kakao: calls.filter((call) => call.provider === 'kakao'),
           tourapi: calls.filter((call) => call.provider === 'tourapi'),
           seoul: calls.filter((call) => call.provider === 'seoul'),

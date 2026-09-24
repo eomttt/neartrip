@@ -37,6 +37,14 @@ Google Cloud 프로젝트에서 결제 계정과 Maps JavaScript API, Places API
 
 [Google 키 제한](https://developers.google.com/maps/api-security-best-practices) · [Places 요금](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing) · [한국 지도 지원 범위](https://developers.google.com/maps/coverage)
 
+### Google 운영 전 확인
+
+결제 계정을 연결한 뒤 Maps JavaScript API와 Places API (New)의 할당량을 확인합니다. 필요한 API만 켜고 자동 할당량 증액은 사용하지 않습니다. 호출 한도에 도달하면 지도나 검색을 사용할 수 없습니다. 예산 알림은 청구를 차단하지 않으며 무료 한도를 자동으로 지켜주는 설정이 아닙니다.
+
+2026년 9월 24일 기준 월 무료 사용량은 Dynamic Maps 10,000회, Text Search Pro 5,000회, Nearby Search Pro 5,000회입니다. 같은 결제 계정의 프로젝트 사용량을 합산합니다. 전체 카테고리 주변 검색 한 번은 Nearby Search 최대 4회, 동선은 별도 경로 조회입니다. 방문자 수와 API 호출 수를 같은 값으로 계산하지 않습니다. [현재 가격표](https://developers.google.com/maps/billing-and-pricing/pricing)와 [비용 관리 문서](https://developers.google.com/maps/billing-and-pricing/manage-costs)를 배포 전에 다시 확인합니다.
+
+Production에 두 Google 키를 등록하고 재빌드한 뒤 실제 지도 표시, 한국어·영어 검색, 주변 장소 선택을 검증합니다. 지도 화면을 이동 안내 시트가 가리지 않는지도 모바일과 데스크톱에서 확인합니다. 키가 없는 상태로 현재 브랜치를 배포하지 않습니다.
+
 차량·택시 이동은 같은 REST API 키로 [카카오모빌리티 자동차 길찾기](https://developers.kakaomobility.com/guide/navi-api/directions)를 조회합니다. 현재 교통 기준 예상 시간과 도로 경로를 표시합니다. 주차·택시 대기 시간은 포함하지 않습니다.
 
 ## 행사·반려견 장소

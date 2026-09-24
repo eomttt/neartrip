@@ -110,7 +110,7 @@
     overscroll-behavior-y: contain;
   }
   .map-panel[data-route-details='true'] .demo-canvas,
-  .map-panel[data-route-details='true'] .kakao-canvas {
+  .map-panel[data-route-details='true'] .google-canvas {
     height: calc(100% - var(--route-sheet-height));
   }
   .map-panel[data-route-details='true'] .map-controls {

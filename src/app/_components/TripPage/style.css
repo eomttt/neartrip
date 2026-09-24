@@ -266,7 +266,7 @@
       height: calc(100% - 32px);
     }
     .map-panel[data-route-details='true'] .demo-canvas,
-    .map-panel[data-route-details='true'] .kakao-canvas {
+    .map-panel[data-route-details='true'] .google-canvas {
       width: calc(100% - var(--route-sheet-width) - 32px);
       height: 100%;
     }

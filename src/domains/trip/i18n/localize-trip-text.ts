@@ -19,16 +19,6 @@ const englishMessages = new Map<string, string>([
     '요청을 완료하지 못했습니다. 다시 시도해주세요.',
     'Could not complete the request. Please try again.',
   ],
-  ['카카오 REST API 키가 설정되지 않았습니다.', 'The Kakao REST API key is not configured.'],
-  [
-    '카카오 응답이 늦어지고 있습니다. 잠시 후 다시 시도해주세요.',
-    'Kakao is responding slowly. Please try again shortly.',
-  ],
-  ['카카오 API 키 또는 사용 권한을 확인해주세요.', 'Check the Kakao API key and permissions.'],
-  [
-    '카카오 API 호출 한도에 도달했습니다. 잠시 후 다시 시도해주세요.',
-    'The Kakao API limit has been reached. Please try again shortly.',
-  ],
   [
     '지금은 행사·반려견 장소 정보를 이용할 수 없어요. 주변 장소는 계속 이용할 수 있어요.',
     'Events and dog-friendly places are unavailable right now. Nearby places are still available.',
@@ -55,10 +45,6 @@ const englishMessages = new Map<string, string>([
   ],
   ['관광정보 응답에 목록이 없어요.', 'The tourism response did not include a list.'],
   [
-    '카카오맵에서 같은 지점으로 안내되는 구간이에요. 현장에서 위치를 확인해주세요.',
-    'KakaoMap treats this leg as the same place. Check the exact location when you arrive.',
-  ],
-  [
     '이 구간의 이동 경로를 찾지 못했어요. 장소나 방문 순서를 확인해주세요.',
     'No route was found for this leg. Check the place or visit order.',
   ],
@@ -75,7 +61,6 @@ const englishMessages = new Map<string, string>([
     '지도를 불러오지 못했어요. 키와 허용 도메인을 확인해주세요.',
     'Could not load the map. Check the key and allowed domains.',
   ],
-  ['카카오 지도 설정을 확인해주세요.', 'Check the Kakao map configuration.'],
   [
     '지도에 연결하지 못했어요. 네트워크를 확인해주세요.',
     'Could not connect to the map. Check your network connection.',

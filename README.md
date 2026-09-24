@@ -25,15 +25,14 @@ npm run dev
 ```dotenv
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=Google_브라우저_키
 GOOGLE_PLACES_API_KEY=Google_서버_키
-KAKAO_REST_API_KEY=카카오_경로_REST_키
 DEMO_MODE=false
 ```
 
 Google Cloud 프로젝트에서 결제 계정과 Maps JavaScript API, Places API (New)가 필요합니다. 두 Google 키를 분리합니다. 공개 키는 Maps JavaScript API와 웹사이트 리퍼러로 제한하고 `http://127.0.0.1:5173/*`, `https://neartrip-one.vercel.app/*` 및 사용하는 Preview 도메인을 허용합니다. 서버 키는 Places API (New)만 허용하며 `NEXT_PUBLIC_` 이름을 쓰지 않습니다. Vercel의 서버 키는 Secret으로 등록합니다. 공개 키 변경 후에는 다시 빌드합니다.
 
-지도·검색·주변 장소에 화면 언어 `ko` 또는 `en`을 전달합니다. Google에 해당 언어의 번역이 없는 장소는 현지 언어로 반환될 수 있습니다. 일반 검색은 최대 8곳, 주변 검색은 네 카테고리에 각각 최대 20곳을 요청하고 중복 장소를 합칩니다. 한국 밖 결과와 반경 밖 결과는 제외합니다. 주변의 모든 장소를 수집하는 기능은 아닙니다. 검색 필드만 요청하며 평점·사진·리뷰는 가져오지 않습니다. 검색 요청에 실패해도 자동으로 과금 요청을 반복하지 않습니다.
+지도·검색·주변 장소에 화면 언어 `ko` 또는 `en`을 전달합니다. Google에 해당 언어의 번역이 없는 장소는 현지 언어로 반환될 수 있습니다. 일반 검색은 최대 8곳, 주변 검색은 네 카테고리에 각각 최대 20곳을 요청하고 중복 장소를 합칩니다. 한국 밖 결과와 반경 밖 결과는 제외합니다. 주변의 모든 장소를 수집하는 기능은 아닙니다. 주변 장소 목록은 Google 평점과 리뷰 수를 함께 요청합니다. 출발·도착지 검색에는 평점 필드를 요청하지 않습니다. 사진이나 리뷰 본문은 가져오지 않습니다. 검색 요청에 실패해도 자동으로 과금 요청을 반복하지 않습니다.
 
-키가 일부만 등록된 경우에는 가상 결과로 전환하지 않고 설정 오류를 표시합니다. 장소·지도 키는 Google로 교체했고 한국 이동 경로 조회는 기존 카카오 API를 유지합니다. 관광청의 행사·반려동물 정보도 기존 원문을 유지합니다.
+키가 일부만 등록된 경우에는 가상 결과로 전환하지 않고 설정 오류를 표시합니다. 지도 표시와 장소 검색은 Google을 사용합니다. Neartrip은 방문 순서와 위치를 정리하며 실제 이동 경로와 시간은 구간별 네이버 지도·Google Maps 링크에서 확인합니다. 관광청의 행사·반려동물 정보도 기존 원문을 유지합니다.
 
 [Google 키 제한](https://developers.google.com/maps/api-security-best-practices) · [Places 요금](https://developers.google.com/maps/documentation/places/web-service/usage-and-billing) · [한국 지도 지원 범위](https://developers.google.com/maps/coverage)
 
@@ -41,11 +40,13 @@ Google Cloud 프로젝트에서 결제 계정과 Maps JavaScript API, Places API
 
 결제 계정을 연결한 뒤 Maps JavaScript API와 Places API (New)의 할당량을 확인합니다. 필요한 API만 켜고 자동 할당량 증액은 사용하지 않습니다. 호출 한도에 도달하면 지도나 검색을 사용할 수 없습니다. 예산 알림은 청구를 차단하지 않으며 무료 한도를 자동으로 지켜주는 설정이 아닙니다.
 
-2026년 9월 24일 기준 월 무료 사용량은 Dynamic Maps 10,000회, Text Search Pro 5,000회, Nearby Search Pro 5,000회입니다. 같은 결제 계정의 프로젝트 사용량을 합산합니다. 전체 카테고리 주변 검색 한 번은 Nearby Search 최대 4회, 동선은 별도 경로 조회입니다. 방문자 수와 API 호출 수를 같은 값으로 계산하지 않습니다. [현재 가격표](https://developers.google.com/maps/billing-and-pricing/pricing)와 [비용 관리 문서](https://developers.google.com/maps/billing-and-pricing/manage-costs)를 배포 전에 다시 확인합니다.
+2026년 9월 24일 기준 월 무료 사용량은 Dynamic Maps 10,000회, Text Search Pro 5,000회, Nearby Search Enterprise 1,000회입니다. 같은 결제 계정의 프로젝트 사용량을 합산합니다. 전체 카테고리 주변 검색 한 번은 Nearby Search 최대 4회, 방문 순서 정리는 외부 경로 API를 호출하지 않습니다. 방문자 수와 API 호출 수를 같은 값으로 계산하지 않습니다. [현재 가격표](https://developers.google.com/maps/billing-and-pricing/pricing)와 [비용 관리 문서](https://developers.google.com/maps/billing-and-pricing/manage-costs)를 배포 전에 다시 확인합니다.
+
+2026년 9월 24일 프로젝트 일일 한도는 지도 로드 300회, 장소 검색 150회, 주변 검색 30회로 설정했습니다. 사용하지 않는 Places 메서드와 3D 지도·Grounding Widget의 일일 한도는 0입니다. 이 설정은 현재 요청 필드와 같은 결제 계정의 다른 사용량이 변하지 않는다는 전제이며 요금 0원을 보장하지 않습니다. `neartrip-first-charge` 예산은 Neartrip에서 월 1원 사용 시 소유자에게 알립니다.
 
 Production에 두 Google 키를 등록하고 재빌드한 뒤 실제 지도 표시, 한국어·영어 검색, 주변 장소 선택을 검증합니다. 지도 화면을 이동 안내 시트가 가리지 않는지도 모바일과 데스크톱에서 확인합니다. 키가 없는 상태로 현재 브랜치를 배포하지 않습니다.
 
-차량·택시 이동은 같은 REST API 키로 [카카오모빌리티 자동차 길찾기](https://developers.kakaomobility.com/guide/navi-api/directions)를 조회합니다. 현재 교통 기준 예상 시간과 도로 경로를 표시합니다. 주차·택시 대기 시간은 포함하지 않습니다.
+한국의 Google 자동차·도보 경로 API 지원 제한 때문에 내부 도로 경로 계산을 제공하지 않습니다. 구간별 네이버 지도·Google Maps 링크로 실제 길찾기를 엽니다. 차량·택시는 자동차 모드, 도보·대중교통은 대중교통 모드로 열며 외부 앱에서 변경할 수 있습니다.
 
 ## 행사·반려견 장소
 
@@ -64,11 +65,11 @@ Production에 두 Google 키를 등록하고 재빌드한 뒤 실제 지도 표�
 1. 출발지를 검색하고 선택합니다.
 2. 주변 장소·이번 주 행사 중에서 최대 5곳 담습니다. 출발·도착점 요약을 누르면 수정할 수 있으며 도착점은 선택 사항입니다.
 3. 담은 순서대로 동선을 만듭니다. 도착점이 없으면 출발점으로 돌아옵니다.
-4. 이동 안내 시트에서 구간을 눌러 지도에서 강조하거나 구간별 네이버 지도·Google Maps 길찾기를 엽니다.
+4. 이동 안내 시트에서 구간을 눌러 도착 장소를 확인하고 구간별 네이버 지도·Google Maps 길찾기를 엽니다.
 
 PC는 화면 폭 1,024px부터 장소 목록과 지도를 나란히 보여줍니다. 기본 검색 반경은 10km이며 차량·택시 이동으로 시작합니다. 모바일 기본값은 반경 1km와 도보·대중교통입니다. 모든 화면에서 검색 반경을 최대 20km까지 넓히고 이동 방식을 바꿀 수 있습니다. 창 크기를 바꿔도 선택한 반경과 이동 방식은 유지합니다.
 
-도보·차량은 실선, 대중교통은 점선으로 표시합니다. 도보·대중교통을 선택하면 도보 20분·대중교통 5정거장 조건을 넘는 구간도 경고와 경로를 함께 보여줍니다. 예시 모드의 거리·시간·동선은 실제 길찾기가 아닙니다.
+실제 지도에는 선택한 장소와 방문 순서를 표시합니다. 실제 일정에 이동 시간·거리·도로 경로를 추정해 표시하지 않습니다. 예시 모드의 거리·시간·동선은 조작 방법을 보여주기 위한 가상 데이터입니다.
 
 ## 개발·배포
 
@@ -93,6 +94,6 @@ npm run format:check
 
 Vercel의 Next.js 프리셋으로 화면과 API를 함께 배포합니다. Production과 Preview의 환경변수·Google 허용 리퍼러는 각각 설정합니다. `main`에 푸시하면 Vercel의 GitHub 연결을 통해 자동 배포됩니다.
 
-API 요청 제한은 인스턴스별 분당 60회입니다. 알려진 경로 응답 오류는 [#7](https://github.com/eomttt/neartrip/issues/7)과 [#9](https://github.com/eomttt/neartrip/issues/9)에서 추적합니다.
+API 요청 제한은 인스턴스별 분당 60회입니다. 실제 길찾기는 외부 지도에서 제공합니다.
 
-오류가 발생하면 화면의 추적 ID로 Vercel Logs를 검색합니다. `api_failure` 로그에는 요청 본문, 구간별 카카오 응답과 관광정보 응답, 검증 실패 위치와 최종 응답이 담깁니다. 키·인증 정보는 가리고 긴 좌표 목록은 일부만 남깁니다. Google 장소 응답 원문은 공급자 로그에 저장하지 않습니다. 정상 요청은 상태와 소요 시간만 기록합니다.
+오류가 발생하면 화면의 추적 ID로 Vercel Logs를 검색합니다. `api_failure` 로그에는 요청 본문, 관광정보 응답, 검증 실패 위치와 최종 응답이 담깁니다. 키·인증 정보는 가리고 긴 좌표 목록은 일부만 남깁니다. Google 장소 응답 원문은 공급자 로그에 저장하지 않습니다. 정상 요청은 상태와 소요 시간만 기록합니다.

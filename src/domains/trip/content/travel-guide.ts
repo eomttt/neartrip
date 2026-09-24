@@ -5,7 +5,7 @@ export const travelGuide = {
       '장소 수보다 이동과 머무는 시간을 먼저 정하세요. 출발점 선택부터 귀가 구간 확인까지 neartrip으로 하루 여행을 계획하는 방법입니다.',
     label: 'neartrip 여행 가이드',
     author: 'neartrip 서비스 안내',
-    updated: '2026년 9월 22일 작성',
+    updated: '2026년 9월 24일 수정',
     start: '동선 만들기',
     read: '전체 가이드 읽기',
     privacy: '개인정보처리방침',
@@ -17,7 +17,7 @@ export const travelGuide = {
       },
       {
         title: '이동 시간에 체류 시간을 더하세요',
-        body: '경로에 표시되는 시간은 하루 일정 전체가 아닙니다. 식사, 관람, 휴식과 대기 시간을 따로 잡고, 마지막 귀가 구간까지 확인하세요.',
+        body: '길찾기 앱에서 구간별 이동 시간을 확인하세요. 식사, 관람, 휴식과 대기 시간을 따로 잡고, 마지막 귀가 구간까지 확인하세요.',
       },
       {
         title: '검색 결과의 범위를 확인하세요',
@@ -50,7 +50,7 @@ export const travelGuide = {
         title: '4. 이동과 체류를 나눠 시간 계산하기',
         paragraphs: [
           '하루 일정은 이동 시간, 장소에 머무는 시간, 여유 시간의 합입니다. 예를 들어 네 시간이 있다면 식사 60분, 관람 60분, 카페 30분, 전체 이동 50분, 여유 40분으로 나눠볼 수 있습니다. 이는 계획을 세우기 위한 예시이며 특정 장소의 실제 소요 시간을 뜻하지 않습니다.',
-          '차량·택시 예상 이동에는 주차와 택시 대기가 포함되지 않습니다. 도보·대중교통 안내도 출발 직전 실제 길찾기에서 확인하세요. 유모차, 짐, 계단 이용 여부처럼 자신의 이동 조건을 반영하면 화면의 예상 시간보다 더 필요할 수 있습니다. 시간이 부족해지면 꼭 갈 곳을 급하게 훑기보다 선택 사항인 한 곳을 빼는 방식으로 조정해 보세요.',
+          'neartrip은 실제 이동 시간이나 도로 경로를 계산하지 않습니다. 네이버 지도나 Google Maps에서 구간별 소요 시간을 확인하고 주차와 택시 대기 시간도 따로 잡으세요. 도보·대중교통 안내도 출발 직전 실제 길찾기에서 확인하세요. 유모차, 짐, 계단 이용 여부처럼 자신의 이동 조건을 반영하면 화면의 예상 시간보다 더 필요할 수 있습니다. 시간이 부족해지면 꼭 갈 곳을 급하게 훑기보다 선택 사항인 한 곳을 빼는 방식으로 조정해 보세요.',
         ],
       },
       {
@@ -63,7 +63,7 @@ export const travelGuide = {
       {
         title: '6. neartrip의 역할과 정보의 한계',
         paragraphs: [
-          'neartrip은 한국 여행 중 숙소 주변의 음식점, 카페, 관광지와 술집 후보를 고르고 방문 순서를 비교하는 도구입니다. 카카오 장소·길찾기와 공공 관광정보를 이용하며, 장소의 운영 상태를 직접 실시간 확인하거나 예약을 대신하지 않습니다. 이 가이드는 서비스 사용 방법과 계획 예시를 설명하며 특정 업소의 방문 후기나 추천 순위가 아닙니다.',
+          'neartrip은 한국 여행 중 숙소 주변의 음식점, 카페, 관광지와 술집 후보를 고르고 방문 순서를 비교하는 도구입니다. Google 지도·장소 검색과 공공 관광정보를 이용하며, 장소의 운영 상태를 직접 실시간 확인하거나 예약을 대신하지 않습니다. 이 가이드는 서비스 사용 방법과 계획 예시를 설명하며 특정 업소의 방문 후기나 추천 순위가 아닙니다.',
           '예시 모드는 가상 장소와 개략 동선을 이용해 조작 방법을 체험하는 화면입니다. 실제 장소와 이동 정보로 사용하지 마세요. 실제 계획에서는 각 구간의 네이버 지도나 Google Maps 길찾기를 열어 확인하고, 출발 직전 운영 정보와 귀가 방법을 다시 점검하세요. 검색·지도 화면에는 광고를 넣지 않으며, 이 여행 가이드에는 Google 광고가 표시될 수 있습니다.',
         ],
       },
@@ -82,7 +82,7 @@ export const travelGuide = {
       'Make room for travel, visits, and breaks before adding more stops. A practical guide to planning a day in Korea with neartrip.',
     label: 'neartrip travel guide',
     author: 'A guide to using neartrip',
-    updated: 'Published September 22, 2026',
+    updated: 'Updated September 24, 2026',
     start: 'Plan your route',
     read: 'Read the full guide',
     privacy: 'Privacy policy',
@@ -94,7 +94,7 @@ export const travelGuide = {
       },
       {
         title: 'Budget for time at each stop',
-        body: 'A route estimate is not the duration of your whole day. Add time for meals, visits, breaks, and queues, and include the final journey back.',
+        body: 'Check travel times for each leg in a directions app. Add time for meals, visits, breaks, and queues, and include the final journey back.',
       },
       {
         title: 'Understand the search results',
@@ -127,7 +127,7 @@ export const travelGuide = {
         title: '4. Add visiting time to travel time',
         paragraphs: [
           'Think of the day as travel time plus time at each stop plus a buffer. For a four-hour outing, an example budget might be 60 minutes for lunch, 60 for a visit, 30 at a café, 50 for all journeys, and 40 left for delays or breaks. These numbers illustrate a planning method; they are not estimates for any particular venue.',
-          'Driving and taxi estimates do not include parking or waiting for a taxi. Check walking and public transport directions before leaving, too. Luggage, a stroller, stairs, or your own walking pace may require more time than the estimate suggests. When the schedule becomes too tight, consider removing an optional visit rather than rushing through every essential stop.',
+          'neartrip does not calculate road routes or travel times. Check each leg in NAVER Map or Google Maps and allow extra time for parking or waiting for a taxi. Check walking and public transport directions before leaving, too. Luggage, a stroller, stairs, or your own walking pace may require more time than the estimate suggests. When the schedule becomes too tight, consider removing an optional visit rather than rushing through every essential stop.',
         ],
       },
       {
@@ -140,7 +140,7 @@ export const travelGuide = {
       {
         title: '6. What neartrip helps with, and its limits',
         paragraphs: [
-          'neartrip helps travelers in Korea choose nearby food, cafés, sights, and drinks and compare a visiting order. It uses Kakao place and route information and public tourism data. It does not independently verify live opening conditions or make reservations. This guide explains how to use the service and how to think through a plan; it is not a firsthand venue review or a ranking of businesses.',
+          'neartrip helps travelers in Korea choose nearby food, cafés, sights, and drinks and compare a visiting order. It uses Google Maps and Places and public tourism data. Actual routes and travel times are available through the linked NAVER Map and Google Maps directions. It does not independently verify live opening conditions or make reservations. This guide explains how to use the service and how to think through a plan; it is not a firsthand venue review or a ranking of businesses.',
           'Demo mode uses fictional places and illustrative routes so you can try the controls. Do not use those examples as real destinations or directions. For a real trip, open the linked NAVER Map or Google Maps directions for each leg and check opening information and your journey home before setting out. Search and map screens do not carry ads; Google ads may appear on this travel guide.',
         ],
       },

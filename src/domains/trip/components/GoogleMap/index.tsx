@@ -238,12 +238,17 @@ export function GoogleMap({
         const marker = document.createElement('span');
         marker.className = 'route-focus-marker';
         marker.setAttribute('role', 'status');
-        marker.setAttribute('aria-label', t('map.previewMoving', { label: highlight.label }));
+        marker.setAttribute(
+          'aria-label',
+          t(highlight.segments.length ? 'map.previewMoving' : 'map.destinationFocus', {
+            label: highlight.label,
+          }),
+        );
         const dot = document.createElement('span');
         dot.className = 'route-playback-dot';
         const label = document.createElement('span');
         label.className = 'route-playback-label';
-        label.textContent = t('map.moving');
+        label.textContent = t(highlight.segments.length ? 'map.moving' : 'map.destinationMarker');
         marker.append(dot, label);
         const overlay = createHtmlOverlay({
           map: currentMap,

@@ -9,7 +9,7 @@ const secretField = /authorization|cookie|password|secret|token|api.?key|service
 
 type LogValue = null | boolean | number | string | LogValue[] | { [key: string]: LogValue };
 interface ProviderCall {
-  provider: 'kakao' | 'tourapi' | 'seoul' | 'google';
+  provider: 'tourapi' | 'seoul' | 'google';
   leg: number | null;
   api: string;
   params: LogValue;
@@ -30,7 +30,7 @@ interface Trace {
 const context = new AsyncLocalStorage<{ trace: Trace; leg: number | null }>();
 
 function redactText(value: string): string {
-  let result = value.replace(/(?:Bearer|KakaoAK)\s+[^\s"',}]+/gi, '[REDACTED]');
+  let result = value.replace(/Bearer\s+[^\s"',}]+/gi, '[REDACTED]');
   for (const [name, secret] of Object.entries(process.env)) {
     if (secretField.test(name) && secret && secret.length >= 8) {
       result = result.split(secret).join('[REDACTED]');
@@ -113,7 +113,7 @@ export function withTraceLeg<T>(leg: number, action: () => Promise<T>): Promise<
 }
 
 export async function traceProviderCall<T>(
-  provider: 'kakao' | 'tourapi' | 'seoul' | 'google',
+  provider: 'tourapi' | 'seoul' | 'google',
   api: string,
   params: Record<string, string>,
   action: (record: (status: number, body: unknown) => void) => Promise<T>,
@@ -194,7 +194,6 @@ export async function traceApiRequest(
           response: bodyForLog(await response.clone().json()),
           error: trace.error,
           google: calls.filter((call) => call.provider === 'google'),
-          kakao: calls.filter((call) => call.provider === 'kakao'),
           tourapi: calls.filter((call) => call.provider === 'tourapi'),
           seoul: calls.filter((call) => call.provider === 'seoul'),
           omittedCalls,
@@ -203,12 +202,4 @@ export async function traceApiRequest(
     }
     return response;
   });
-}
-
-export function traceKakaoCall<T>(
-  api: string,
-  params: Record<string, string>,
-  action: (record: (status: number, body: unknown) => void) => Promise<T>,
-) {
-  return traceProviderCall('kakao', api, params, action);
 }

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRateLimiter, readPlanBody, respondToApi } from './api-response';
-import { ProviderError } from './kakao';
+import { ProviderError } from './provider-error';
 import { getTripConfig } from './trip-service';
 
 function planRequest(body: string, contentType = 'application/json') {
@@ -63,8 +63,7 @@ describe('Route Handler 요청 경계', () => {
   });
   it('키가 하나만 있으면 예시 모드로 숨기지 않는다', () => {
     vi.stubEnv('DEMO_MODE', 'false');
-    vi.stubEnv('KAKAO_REST_API_KEY', 'test-rest-value');
-    vi.stubEnv('GOOGLE_PLACES_API_KEY', '');
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', 'test-server-value');
     vi.stubEnv('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', '');
     expect(getTripConfig()).toMatchObject({ configured: false, demo: false });
   });

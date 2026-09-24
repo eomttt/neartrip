@@ -7,6 +7,19 @@ import { demoOrigin } from '../../../../../server/demo';
 
 afterEach(cleanup);
 
+it('Google 별점과 리뷰 수를 표시하고 별점이 없는 장소에는 점수를 만들지 않는다', () => {
+  const props = { origin: demoOrigin, isSelected: false, isDisabled: false, onSelect: vi.fn() };
+  const { rerender } = renderWithI18n(
+    <PlaceCard {...props} place={{ ...demoOrigin, rating: 4.6, userRatingCount: 1234 }} />,
+  );
+  expect(screen.getByText('4.6')).toBeTruthy();
+  expect(screen.getByText(/리뷰 1,234개/)).toBeTruthy();
+  expect(screen.getByLabelText('Google 별점 5점 만점에 4.6점')).toBeTruthy();
+  rerender(<PlaceCard {...props} place={demoOrigin} />);
+  expect(screen.queryByText('4.6')).toBeNull();
+  expect(screen.queryByLabelText(/Google 별점/)).toBeNull();
+});
+
 it('장소 상세를 네이버와 Google 지도 HTTPS 새 창 링크로 제공한다', () => {
   renderWithI18n(
     <PlaceCard

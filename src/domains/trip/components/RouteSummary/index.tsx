@@ -78,18 +78,19 @@ export function RouteSummary({
                   : t('route.readyTitle')}
             </strong>
           </div>
-          <p>
-            {hasWarnings ? t('route.shownTotal') : t('route.travelOnly')}{' '}
-            {totalSeconds
-              ? t('route.minutes', { count: Math.max(1, Math.ceil(totalSeconds / 60)) })
-              : t('route.zeroMinutes')}
-            <span>·</span>
-            {formatDistance(totalMeters)}
-            {itinerary.demo ? ` ${t('route.estimate')}` : ''}
-          </p>
-          {!itinerary.demo && itinerary.legs.some((leg) => leg.travelMode === 'driving') ? (
-            <p className="text-xs text-muted-foreground">{t('travel.drivingTime')}</p>
-          ) : null}
+          {itinerary.externalDirections ? (
+            <p>{t('route.externalDirections')}</p>
+          ) : (
+            <p>
+              {hasWarnings ? t('route.shownTotal') : t('route.travelOnly')}{' '}
+              {totalSeconds
+                ? t('route.minutes', { count: Math.max(1, Math.ceil(totalSeconds / 60)) })
+                : t('route.zeroMinutes')}
+              <span>·</span>
+              {formatDistance(totalMeters)}
+              {itinerary.demo ? ` ${t('route.estimate')}` : ''}
+            </p>
+          )}
           <h3 className="route-details-title">{t('route.legs')}</h3>
           <div
             className="route-details-scroll"
@@ -97,7 +98,9 @@ export function RouteSummary({
             aria-label={t('route.legsRegion')}
             tabIndex={0}
           >
-            <p className="route-detail-hint">{t('route.hint')}</p>
+            <p className="route-detail-hint">
+              {t(itinerary.externalDirections ? 'route.externalHint' : 'route.hint')}
+            </p>
             {itinerary.legs.map((leg, index) => {
               const isOpen = !closedLegs.includes(index);
               const legDetailsId = `${detailsId}-${index}`;
@@ -192,7 +195,7 @@ export function RouteSummary({
                       </div>
                     ) : null}
                     {leg.segments.length === 0 ? (
-                      leg.warning ? null : (
+                      leg.warning || itinerary.externalDirections ? null : (
                         <p>{t('route.samePlace')}</p>
                       )
                     ) : (

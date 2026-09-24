@@ -19,6 +19,8 @@ export const placeSchema = coordinateSchema.extend({
   category: categorySchema,
   description: z.string().max(300),
   url: z.string().default(''),
+  rating: z.number().min(1).max(5).optional(),
+  userRatingCount: z.number().int().nonnegative().optional(),
   attributions: z
     .array(z.object({ name: z.string().max(300), url: z.string().optional() }))
     .optional(),
@@ -55,6 +57,7 @@ export const itinerarySchema = z.object({
   places: z.array(placeSchema),
   legs: z.array(legSchema),
   demo: z.boolean(),
+  externalDirections: z.boolean().optional(),
 });
 export type Itinerary = z.infer<typeof itinerarySchema>;
 export const planRequestSchema = z

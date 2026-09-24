@@ -6,12 +6,12 @@ const copyByLocale = {
   ko: {
     title: '개인정보처리방침',
     description: 'neartrip의 서비스 데이터와 Google 광고 쿠키 사용 안내입니다.',
-    updated: '최종 수정: 2026년 9월 23일',
+    updated: '최종 수정: 2026년 9월 24일',
     back: '가까이로 돌아가기',
     sections: [
       {
         title: '서비스 이용 정보',
-        body: 'neartrip은 회원가입 없이 이용합니다. 장소 검색어, 선택한 장소와 좌표, 이동 조건은 주변 장소 검색과 동선 생성을 위해 서버로 전송됩니다. Google Maps와 Places에 지도·장소 검색 정보를 전달합니다. 카카오에는 이동 경로 조회 정보를, 공공 관광정보 서비스에는 주변 관광정보 조회에 필요한 정보를 전달합니다.',
+        body: 'neartrip은 회원가입 없이 이용합니다. 장소 검색어, 선택한 장소와 좌표, 이동 조건은 주변 장소 검색과 동선 생성을 위해 서버로 전송됩니다. Google Maps와 Places에 지도·장소 검색 정보를 전달합니다. 공공 관광정보 서비스에는 주변 관광정보 조회에 필요한 정보를 전달합니다. 길찾기 링크를 누르면 선택한 두 장소의 이름과 좌표가 네이버 지도 또는 Google Maps에 전달됩니다.',
       },
       {
         title: '접속 정보와 오류 기록',
@@ -32,18 +32,18 @@ const copyByLocale = {
     googlePartners: 'Google 파트너 사이트의 데이터 사용',
     adSettings: 'Google 광고 설정',
     adChoices: '제3자 개인 맞춤 광고 선택',
-    kakaoPrivacy: '카카오 개인정보처리방침',
+    naverPrivacy: '네이버 개인정보처리방침',
     vercelPrivacy: 'Vercel 개인정보처리방침',
   },
   en: {
     title: 'Privacy policy',
     description: 'How neartrip uses service data and Google advertising cookies.',
-    updated: 'Last updated: September 23, 2026',
+    updated: 'Last updated: September 24, 2026',
     back: 'Back to neartrip',
     sections: [
       {
         title: 'Information used by the service',
-        body: 'neartrip does not require an account. Search terms, selected places and coordinates, and travel preferences are sent to our server to find nearby places and create routes. We send map and place searches to Google Maps and Places, route requests to Kakao, and nearby tourism queries to public tourism services.',
+        body: 'neartrip does not require an account. Search terms, selected places and coordinates, and travel preferences are sent to our server to find nearby places and create routes. We send map and place searches to Google Maps and Places, and nearby tourism queries to public tourism services. Opening a directions link sends the two selected places and coordinates to NAVER Map or Google Maps.',
       },
       {
         title: 'Access information and error logs',
@@ -64,7 +64,7 @@ const copyByLocale = {
     googlePartners: 'How Google uses data from partner sites',
     adSettings: 'Google Ads Settings',
     adChoices: 'Third-party advertising choices',
-    kakaoPrivacy: 'Kakao Privacy Policy',
+    naverPrivacy: 'NAVER Privacy Policy',
     vercelPrivacy: 'Vercel Privacy Policy',
   },
 };
@@ -101,7 +101,7 @@ export default async function PrivacyPage({ params }: PageProps<'/[locale]/priva
     { label: copy.googlePartners, href: 'https://policies.google.com/technologies/partner-sites' },
     { label: copy.adSettings, href: 'https://adssettings.google.com/' },
     { label: copy.adChoices, href: 'https://optout.aboutads.info/' },
-    { label: copy.kakaoPrivacy, href: 'https://www.kakao.com/policy/privacy' },
+    { label: copy.naverPrivacy, href: 'https://policy.naver.com/policy/privacy.html' },
     { label: copy.vercelPrivacy, href: 'https://vercel.com/legal/privacy-policy' },
   ];
   return (

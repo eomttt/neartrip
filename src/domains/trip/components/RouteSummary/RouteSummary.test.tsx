@@ -211,8 +211,8 @@ it('각 구간의 방향과 이동수단에 맞는 네이버 지도와 Google Ma
   expect(
     new URL(returningGoogleLink.getAttribute('href') ?? '').searchParams.get('travelmode'),
   ).toBe('transit');
-  expect(new URL(warningGoogleLink.getAttribute('href') ?? '').searchParams.has('travelmode')).toBe(
-    false,
+  expect(new URL(warningGoogleLink.getAttribute('href') ?? '').searchParams.get('travelmode')).toBe(
+    'transit',
   );
   expect(outwardLink.getAttribute('target')).toBe('_blank');
   expect(outwardLink.getAttribute('rel')).toBe('noopener noreferrer');
@@ -221,6 +221,38 @@ it('각 구간의 방향과 이동수단에 맞는 네이버 지도와 Google Ma
   await user.click(outwardLink);
   expect(onFocusRoute).not.toHaveBeenCalled();
   expect(screen.getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
+});
+
+it('외부 길찾기 일정은 이동 시간과 거리 및 같은 위치 안내를 꾸며내지 않는다', () => {
+  const destination = { ...demoOrigin, id: 'destination', name: '서울역', lat: 37.55 };
+  renderWithI18n(
+    withQueries(
+      <RouteSummary
+        origin={demoOrigin}
+        destination={destination}
+        onEdit={vi.fn()}
+        onFocusRoute={vi.fn()}
+        itinerary={{
+          demo: false,
+          externalDirections: true,
+          places: [],
+          legs: [
+            { from: demoOrigin, to: destination, travelMode: 'local', segments: [], warning: null },
+          ],
+        }}
+      />,
+    ),
+  );
+  expect(
+    screen.getByText('이동 경로와 소요 시간은 아래 네이버 지도 또는 Google Maps에서 확인해주세요.'),
+  ).toBeTruthy();
+  expect(screen.queryByText(/0분|0m|같은 위치|추정치/)).toBeNull();
+  expect(screen.queryByText(/표시점이.*움직/)).toBeNull();
+  const google = new URL(
+    screen.getByRole('link', { name: /^1구간 Google Maps/ }).getAttribute('href') ?? '',
+  );
+  expect(google.searchParams.get('travelmode')).toBe('transit');
+  expect(screen.getByRole('link', { name: /^1구간 네이버 지도/ })).toBeTruthy();
 });
 
 it('가상 장소의 예시 동선에는 외부 길찾기 링크를 표시하지 않는다', () => {

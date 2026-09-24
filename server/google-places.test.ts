@@ -29,6 +29,15 @@ afterEach(() => {
 });
 
 describe('Google 장소 검색', () => {
+  it('분류가 생략된 주소 요소가 있어도 국가 정보가 한국이면 목록을 표시한다', async () => {
+    fetchPlaces.mockResolvedValue(
+      Response.json({
+        places: [{ ...row, addressComponents: [{ shortText: '123' }, ...row.addressComponents] }],
+      }),
+    );
+    const places = await nearbyGooglePlaces(origin, 'restaurant', 1000, 'en');
+    expect(places.map((place) => place.id)).toEqual(['google:google-place-id']);
+  });
   it('영문 검색의 언어와 한국 검색 범위를 전달하고 Google 장소 ID와 출처를 보존한다', async () => {
     const places = await searchTripPlaces(
       new URLSearchParams({ q: 'Myeongdong Cafe', locale: 'en' }),
@@ -92,6 +101,21 @@ describe('Google 장소 검색', () => {
         (call) => JSON.parse(String(call[1]?.body)).languageCode === 'en',
       ),
     ).toBe(true);
+  });
+  it('주변 목록에만 평점과 리뷰 수를 요청하고 누락된 평점은 만들지 않는다', async () => {
+    fetchPlaces.mockResolvedValueOnce(
+      Response.json({ places: [{ ...row, rating: 4.6, userRatingCount: 1234 }] }),
+    );
+    const places = await nearbyGooglePlaces(origin, 'cafe', 1000, 'en');
+    expect(places[0]).toMatchObject({ rating: 4.6, userRatingCount: 1234 });
+    const nearbyHeaders = new Headers(fetchPlaces.mock.calls[0]?.[1]?.headers);
+    expect(nearbyHeaders.get('X-Goog-FieldMask')).toContain('places.rating,places.userRatingCount');
+    const results = await searchGooglePlaces('hotel', 'en');
+    const textHeaders = new Headers(fetchPlaces.mock.calls[1]?.[1]?.headers);
+    expect(textHeaders.get('X-Goog-FieldMask')).not.toMatch(
+      /rating|userRatingCount|reviews|photos/,
+    );
+    expect(results[0]?.rating).toBeUndefined();
   });
   it('검색 결과가 없으면 빈 목록을 반환한다', async () => {
     fetchPlaces.mockResolvedValue(Response.json({}));

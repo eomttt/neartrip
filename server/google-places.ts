@@ -19,8 +19,10 @@ const googlePlaceSchema = z.object({
   primaryType: z.string().default(''),
   types: z.array(z.string()).default([]),
   primaryTypeDisplayName: z.object({ text: z.string() }).optional(),
+  rating: z.number().min(1).max(5).optional(),
+  userRatingCount: z.number().int().nonnegative().optional(),
   addressComponents: z
-    .array(z.object({ shortText: z.string().optional(), types: z.array(z.string()) }))
+    .array(z.object({ shortText: z.string().optional(), types: z.array(z.string()).default([]) }))
     .default([]),
   attributions: z
     .array(z.object({ provider: z.string(), providerUri: z.string().optional() }))
@@ -80,6 +82,8 @@ function googlePlaceToPlace(
     address: place.formattedAddress.slice(0, 250),
     description: place.primaryTypeDisplayName?.text.slice(0, 300) ?? '',
     category: placeCategory(place, fallback),
+    rating: place.rating,
+    userRatingCount: place.userRatingCount,
     url: `https://www.google.com/maps/search/?${params}`,
     attributions: place.attributions.map((attribution) => ({
       name: attribution.provider,
@@ -111,7 +115,8 @@ async function requestPlaces(
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': key,
-          'X-Goog-FieldMask': fields,
+          'X-Goog-FieldMask':
+            path === 'searchNearby' ? `${fields},places.rating,places.userRatingCount` : fields,
         },
         body: JSON.stringify({ ...body, languageCode: locale, regionCode: 'KR' }),
         signal: AbortSignal.timeout(12_000),
@@ -145,7 +150,13 @@ async function requestPlaces(
     }
     try {
       return responseSchema.parse(await response.json());
-    } catch {
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        record(response.status, {
+          captured: false,
+          issues: error.issues.map(({ code, path }) => ({ code, path })),
+        });
+      }
       throw new ProviderError(
         message(
           'Google 장소 응답을 읽지 못했습니다.',

@@ -712,7 +712,7 @@ describe('두 단계 여행 화면과 예시 API 연결', () => {
     });
     try {
       await user.click(screen.getByRole('button', { name: /^순서대로 동선 짜기/ }));
-      await screen.findByRole('button', { name: '길을 찾아보고 있어요' });
+      await screen.findByRole('button', { name: '방문 순서를 정리하고 있어요' });
       await user.click(screen.getByRole('button', { name: '오후의 커피 담기' }));
       expect(
         screen.getByRole('button', { name: /^순서대로 동선 짜기/ }).hasAttribute('disabled'),

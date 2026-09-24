@@ -10,6 +10,7 @@ import {
   Footprints,
   Leaf,
   Plus,
+  Star,
   UtensilsCrossed,
   Wine,
 } from 'lucide-react';
@@ -52,6 +53,21 @@ export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, cro
           <span className="category-label">{t(categoryMessageKeys[place.category])}</span>
         </div>
         <p className="place-address">{place.address}</p>
+        {place.rating !== undefined ? (
+          <p
+            className="flex items-center gap-1 text-xs text-muted-foreground"
+            aria-label={t('place.ratingLabel', { rating: place.rating.toFixed(1) })}
+          >
+            <Star className="size-3 fill-current text-primary" aria-hidden="true" />
+            <span className="font-medium text-foreground">{place.rating.toFixed(1)}</span>
+            {place.userRatingCount !== undefined ? (
+              <span>
+                · {t('place.reviewCount', { count: place.userRatingCount.toLocaleString(locale) })}
+              </span>
+            ) : null}
+            <span>· Google</span>
+          </p>
+        ) : null}
         <div className="place-meta">
           <span className="distance">
             <Footprints className="size-3" aria-hidden="true" />

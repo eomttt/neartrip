@@ -5,10 +5,10 @@ import { mergePetPlaces } from './merge-pet-places';
 
 const cafe: Place = {
   ...demoOrigin,
-  id: 'kakao:1',
+  id: 'google:1',
   name: '성수 카페',
   category: 'cafe',
-  url: 'https://place.map.kakao.com/1',
+  url: 'https://www.google.com/maps/search/?api=1&query=cafe&query_place_id=1',
 };
 const pet: Place = {
   ...cafe,
@@ -16,7 +16,7 @@ const pet: Place = {
   name: '성수카페',
   tourism: { kind: 'pet', conditions: '소형견 · 야외 좌석' },
 };
-it('이름과 좌표가 일치하면 카카오 ID·분류·링크를 유지하고 조건을 붙인다', () => {
+it('이름과 좌표가 일치하면 Google ID·분류·링크를 유지하고 조건을 붙인다', () => {
   expect(mergePetPlaces([cafe], [pet])).toEqual([{ ...cafe, tourism: pet.tourism }]);
   expect(cafe.tourism).toBeUndefined();
 });
@@ -30,6 +30,6 @@ it('정보가 없으면 원래 목록을 유지하고 반복 페이지는 중복
   expect(mergePetPlaces([], [pet, pet])).toEqual([pet]);
 });
 it('이름과 위치가 같은 후보가 여러 개면 동반 여부를 추측하지 않는다', () => {
-  const duplicate = { ...cafe, id: 'kakao:2' };
+  const duplicate = { ...cafe, id: 'google:2' };
   expect(mergePetPlaces([cafe, duplicate], [pet])).toEqual([cafe, duplicate]);
 });

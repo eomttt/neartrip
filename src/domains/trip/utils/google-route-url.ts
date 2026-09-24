@@ -21,6 +21,8 @@ export function getGoogleRouteUrl(leg: Leg) {
       ? 'transit'
       : 'walking';
     searchParams.set('travelmode', travelMode);
+  } else if (leg.travelMode === 'local') {
+    searchParams.set('travelmode', 'transit');
   }
 
   return `https://www.google.com/maps/dir/?${searchParams.toString()}`;

@@ -3,17 +3,13 @@ import { z } from 'zod';
 import { categorySchema, planRequestSchema } from '../src/domains/trip/models/model-trip';
 import { orderRoundTrip } from '../src/domains/trip/utils/route-order';
 import { createDemoLeg, demoOrigin, demoPlaces, nearbyDemo } from './demo';
-import { getLeg } from './kakao';
 import { nearbyGooglePlaces, searchGooglePlaces } from './google-places';
-import { withTraceLeg } from './request-trace';
 
 export function getTripConfig() {
   const javascriptKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const placesKey = process.env.GOOGLE_PLACES_API_KEY;
   return {
-    demo:
-      process.env.DEMO_MODE === 'true' ||
-      (!placesKey && !javascriptKey && !process.env.KAKAO_REST_API_KEY),
+    demo: process.env.DEMO_MODE === 'true' || (!placesKey && !javascriptKey),
     configured: Boolean(placesKey && javascriptKey),
     demoOrigin,
   };
@@ -59,20 +55,10 @@ export async function buildTripPlan(input: unknown) {
     const from = points[index];
     return from ? [{ from, to }] : [];
   });
-  const legs = [];
-  // 공급자의 순간 호출량을 줄이기 위해 동시에 세 구간까지만 조회합니다.
-  for (let index = 0; index < pairs.length; index += 3) {
-    legs.push(
-      ...(await Promise.all(
-        pairs
-          .slice(index, index + 3)
-          .map(({ from, to }, offset) =>
-            withTraceLeg(index + offset + 1, async () =>
-              demo ? createDemoLeg(from, to, travelMode) : getLeg(from, to, travelMode),
-            ),
-          ),
-      )),
-    );
-  }
-  return { places: ordered, legs, demo };
+  const legs = pairs.map(({ from, to }) =>
+    demo
+      ? createDemoLeg(from, to, travelMode)
+      : { from, to, travelMode, segments: [], warning: null },
+  );
+  return { places: ordered, legs, demo, externalDirections: !demo };
 }

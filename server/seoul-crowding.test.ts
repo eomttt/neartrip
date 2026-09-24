@@ -32,7 +32,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(now);
   vi.stubEnv('DEMO_MODE', 'false');
-  vi.stubEnv('KAKAO_REST_API_KEY', 'test-kakao');
+  vi.stubEnv('GOOGLE_PLACES_API_KEY', 'test-places');
   vi.stubEnv('SEOUL_OPEN_API_KEY', `private-seoul-key-${++keyIndex}`);
 });
 afterEach(() => {

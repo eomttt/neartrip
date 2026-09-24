@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next';
+import { siteOrigin } from '@/common/seo/site-metadata';
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: { userAgent: '*', allow: '/', disallow: '/api/' },
-    sitemap: 'https://neartrip-one.vercel.app/sitemap.xml',
+    sitemap: `${siteOrigin}/sitemap.xml`,
   };
 }

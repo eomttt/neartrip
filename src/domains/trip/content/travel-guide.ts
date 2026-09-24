@@ -1,6 +1,6 @@
 export const travelGuide = {
   ko: {
-    title: '숙소를 중심으로 무리 없는 하루 동선 짜기',
+    title: '한국 여행 일정 짜기: 숙소 주변 하루 동선 가이드',
     description:
       '장소 수보다 이동과 머무는 시간을 먼저 정하세요. 출발점 선택부터 귀가 구간 확인까지 neartrip으로 하루 여행을 계획하는 방법입니다.',
     label: 'neartrip 여행 가이드',
@@ -77,7 +77,7 @@ export const travelGuide = {
     ],
   },
   en: {
-    title: 'Build a manageable day around your stay',
+    title: 'How to Plan a Day in Korea Around Your Hotel',
     description:
       'Make room for travel, visits, and breaks before adding more stops. A practical guide to planning a day in Korea with neartrip.',
     label: 'neartrip travel guide',

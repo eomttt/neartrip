@@ -295,7 +295,7 @@ const enMessages: Record<MessageKey, string> = {
   'plan.placeCount': '· {count} places',
   'planner.maxPlaces': 'You can add up to five places.',
   'planner.failed': 'Could not build the route. Please try again.',
-  'endpoints.introTitle': 'Staying nearby? Where should we go today?',
+  'endpoints.introTitle': 'Plan a day in Korea around your hotel',
   'endpoints.introDescription': 'First, choose your hotel or another starting point.',
   'endpoints.edit': 'Edit start and destination',
   'endpoints.origin': 'Start at {name}',

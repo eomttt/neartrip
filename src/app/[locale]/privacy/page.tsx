@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { isLocale } from '@/common/i18n/locale';
+import { pageMetadata } from '@/common/seo/site-metadata';
 
 const copyByLocale = {
   ko: {
@@ -75,20 +76,12 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const copy = copyByLocale[locale];
-  return {
+  return pageMetadata({
+    locale,
+    path: '/privacy',
     title: `${copy.title} | neartrip`,
     description: copy.description,
-    alternates: {
-      canonical: `/${locale}/privacy`,
-      languages: { ko: '/ko/privacy', en: '/en/privacy', 'x-default': '/en/privacy' },
-    },
-    openGraph: {
-      title: `${copy.title} | neartrip`,
-      description: copy.description,
-      url: `/${locale}/privacy`,
-    },
-    twitter: { title: `${copy.title} | neartrip`, description: copy.description },
-  };
+  });
 }
 
 export default async function PrivacyPage({ params }: PageProps<'/[locale]/privacy'>) {

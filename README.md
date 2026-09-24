@@ -73,6 +73,21 @@ PC는 화면 폭 1,024px부터 장소 목록과 지도를 나란히 보여줍니
 
 ## 개발·배포
 
+### 검색 노출과 여행 콘텐츠
+
+영어 기본 주소는 `/en`, 한국어는 `/ko`입니다. 언어가 없는 주소에서만 브라우저 선호 언어를 적용합니다. 언어가 있는 페이지는 다른 언어로 강제 이동하지 않습니다. 메인, 여행 가이드, 개인정보 안내는 각자 canonical과 상호 hreflang, Open Graph·Twitter 이미지를 가집니다. Preview 배포에는 `noindex`를 적용합니다.
+
+`/en/guide`의 사용 안내와 다음 두 여행 가이드는 검색엔진이 읽을 수 있는 HTML로 제공됩니다. 한국어 번역은 같은 경로의 `/ko` 버전입니다. 가이드는 공식 관광·지도 안내를 출처로 연결하고 메인과 서로 연결합니다.
+
+- `/en/guide/myeongdong-half-day-itinerary`: 명동 반나절 일정 예시
+- `/en/guide/naver-map-google-maps-korea`: 한국 여행에서 네이버·구글 지도 쓰기
+
+`src/domains/trip/content/destination-guides.ts`에 가이드를 추가하면 정적 페이지와 사이트맵이 함께 생성됩니다. `updated`는 실제 본문 수정일에만 바꿉니다. JSON-LD는 실제 서비스와 문서 정보를 설명하며 장소 별점을 neartrip 자체 평점으로 사용하지 않습니다.
+
+Search Console이 발급한 공개 소유권 확인 태그를 공통 레이아웃에 포함합니다. 배포 후 Google Search Console의 `https://neartrip-one.vercel.app/` 속성에서 소유권을 확인하고 `/sitemap.xml`을 제출합니다. 새 영어 URL은 URL 검사에서 색인 상태를 확인합니다. 코드 반영만으로 소유권 확인이나 색인이 완료되는 것은 아닙니다. 국가·검색어별 노출과 클릭 수는 Search Console에서 확인합니다.
+
+[Google 다국어 페이지 안내](https://developers.google.com/search/docs/specialty/international/localized-versions) · [사용자에게 도움이 되는 콘텐츠](https://developers.google.com/search/docs/fundamentals/creating-helpful-content)
+
 ### Google AdSense
 
 공통 레이아웃에는 게시자 `pub-9152190009267204`의 확인 메타 태그만 넣습니다. `/ads.txt`에서도 같은 게시자를 확인할 수 있습니다. 광고 코드는 본문을 서버에서 표시하는 `/ko/guide`, `/en/guide`에서만 불러옵니다. 검색·지도, 개인정보 안내, 오류 화면에는 광고 코드를 넣지 않습니다. 개발 서버와 Vercel Preview에서도 불러오지 않으며, `ADSENSE_ENABLED=false`로 설정하고 다시 배포하면 광고를 끕니다.

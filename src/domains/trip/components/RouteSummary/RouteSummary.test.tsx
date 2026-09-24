@@ -35,9 +35,10 @@ it.each([true, false])(
         />,
       ),
     );
-    expect(screen.getByRole('link', { name: /^1구간 카카오맵/ }).getAttribute('href')).toContain(
-      '/link/by/car/',
+    const naver = new URL(
+      screen.getByRole('link', { name: /^1구간 네이버 지도/ }).getAttribute('href') ?? '',
     );
+    expect(naver.searchParams.get('pathType')).toBe('0');
     const google = new URL(
       screen.getByRole('link', { name: /^1구간 Google/ }).getAttribute('href') ?? '',
     );
@@ -116,8 +117,8 @@ it('구간을 각각 접고 펼쳐도 목록과 다른 구간 및 지도 선택�
   expect(screen.getByRole('button', { name: '2구간 접기' }).getAttribute('aria-expanded')).toBe(
     'true',
   );
-  expect(screen.queryByRole('link', { name: /^1구간 카카오맵/ })).toBeNull();
-  expect(screen.getByRole('link', { name: /^2구간 카카오맵/ })).toBeTruthy();
+  expect(screen.queryByRole('link', { name: /^1구간 네이버 지도/ })).toBeNull();
+  expect(screen.getByRole('link', { name: /^2구간 네이버 지도/ })).toBeTruthy();
   expect(props.onFocusRoute).not.toHaveBeenCalled();
   await user.keyboard(' ');
   expect(controlled?.hidden).toBe(false);
@@ -140,7 +141,7 @@ it('구간을 각각 접고 펼쳐도 목록과 다른 구간 및 지도 선택�
   expect(screen.getByRole('region', { name: '구간별 이동 안내' })).toBeTruthy();
 });
 
-it('각 구간의 방향과 이동수단에 맞는 카카오맵과 Google Maps 링크를 제공한다', async () => {
+it('각 구간의 방향과 이동수단에 맞는 네이버 지도와 Google Maps 링크를 제공한다', async () => {
   const user = userEvent.setup();
   const destination = { ...demoOrigin, id: 'destination', name: '카페 / 쉼, #1', lat: 37.55 };
   const outward = createDemoLeg(demoOrigin, destination);
@@ -173,21 +174,29 @@ it('각 구간의 방향과 이동수단에 맞는 카카오맵과 Google Maps �
       />,
     ),
   );
-  const outwardLink = screen.getByRole('link', { name: /^1구간 카카오맵/ });
-  const returningLink = screen.getByRole('link', { name: /^2구간 카카오맵/ });
+  const outwardLink = screen.getByRole('link', { name: /^1구간 네이버 지도/ });
+  const returningLink = screen.getByRole('link', { name: /^2구간 네이버 지도/ });
   const outwardGoogleLink = screen.getByRole('link', { name: /^1구간 Google Maps/ });
   const returningGoogleLink = screen.getByRole('link', { name: /^2구간 Google Maps/ });
   const warningGoogleLink = screen.getByRole('link', { name: /^3구간 Google Maps/ });
-  expect(decodeURIComponent(outwardLink.getAttribute('href') ?? '')).toBe(
-    `https://map.kakao.com/link/by/walk/${demoOrigin.name},${demoOrigin.lat},${demoOrigin.lng}/${destination.name},${destination.lat},${destination.lng}`,
-  );
+  const outwardNaverUrl = new URL(outwardLink.getAttribute('href') ?? '');
+  expect(outwardNaverUrl.origin + outwardNaverUrl.pathname).toBe('https://map.naver.com/index.nhn');
+  expect(outwardNaverUrl.searchParams.get('slat')).toBe(String(demoOrigin.lat));
+  expect(outwardNaverUrl.searchParams.get('slng')).toBe(String(demoOrigin.lng));
+  expect(outwardNaverUrl.searchParams.get('elat')).toBe(String(destination.lat));
+  expect(outwardNaverUrl.searchParams.get('elng')).toBe(String(destination.lng));
+  expect(outwardNaverUrl.searchParams.get('stext')).toBe(demoOrigin.name);
+  expect(outwardNaverUrl.searchParams.get('etext')).toBe(destination.name);
+  expect(outwardNaverUrl.searchParams.get('pathType')).toBe('3');
   expect(outwardLink.getAttribute('href')).toContain('%2F');
   expect(outwardLink.getAttribute('href')).toContain('%23');
-  expect(decodeURIComponent(returningLink.getAttribute('href') ?? '')).toBe(
-    `https://map.kakao.com/link/by/traffic/${destination.name},${destination.lat},${destination.lng}/${demoOrigin.name},${demoOrigin.lat},${demoOrigin.lng}`,
-  );
-  expect(screen.getByRole('link', { name: /^3구간 카카오맵/ }).getAttribute('href')).toContain(
-    '/link/from/',
+  const returningNaverUrl = new URL(returningLink.getAttribute('href') ?? '');
+  expect(returningNaverUrl.searchParams.get('slat')).toBe(String(destination.lat));
+  expect(returningNaverUrl.searchParams.get('elat')).toBe(String(demoOrigin.lat));
+  expect(returningNaverUrl.searchParams.get('pathType')).toBe('1');
+  const warningNaverLink = screen.getByRole('link', { name: /^3구간 네이버 지도/ });
+  expect(new URL(warningNaverLink.getAttribute('href') ?? '').searchParams.get('pathType')).toBe(
+    '1',
   );
   const outwardGoogleUrl = new URL(outwardGoogleLink.getAttribute('href') ?? '');
   expect(outwardGoogleUrl.origin + outwardGoogleUrl.pathname).toBe(
@@ -231,6 +240,6 @@ it('가상 장소의 예시 동선에는 외부 길찾기 링크를 표시하지
       />,
     ),
   );
-  expect(screen.queryByRole('link', { name: /카카오맵에서 보기/ })).toBeNull();
+  expect(screen.queryByRole('link', { name: /네이버 지도에서 보기/ })).toBeNull();
   expect(screen.queryByRole('link', { name: /Google Maps에서 보기/ })).toBeNull();
 });

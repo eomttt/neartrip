@@ -14,7 +14,7 @@ import {
   Wine,
 } from 'lucide-react';
 import type { Category, Place } from '../../models/model-trip';
-import { getPlaceDetailUrl } from '../../utils/place-detail';
+import { getNaverPlaceUrl, getPlaceDetailUrl } from '../../utils/place-detail';
 import { distanceMeters, formatDistance } from '../../utils/route-order';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 import { categoryMessageKeys } from '../../i18n/trip-message-keys';
@@ -39,6 +39,7 @@ const categoryIcons: Record<Category, typeof Coffee> = {
 export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, crowding }: Props) {
   const { locale, t } = useI18n();
   const detailUrl = getPlaceDetailUrl(place.url);
+  const naverUrl = detailUrl ? getNaverPlaceUrl(place) : null;
   const Icon = categoryIcons[place.category];
   return (
     <article className={`place-card ${isSelected ? 'is-selected' : ''}`}>
@@ -58,6 +59,17 @@ export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, cro
               distance: formatDistance(distanceMeters(origin, place)),
             })}
           </span>
+          {naverUrl ? (
+            <a
+              className="place-detail-link"
+              href={naverUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t('place.naverLabel', { name: place.name })}
+            >
+              {t('place.naver')} <ExternalLink className="size-3" aria-hidden="true" />
+            </a>
+          ) : null}
           {detailUrl ? (
             <a
               className="place-detail-link"
@@ -66,7 +78,7 @@ export function PlaceCard({ place, origin, isSelected, isDisabled, onSelect, cro
               rel="noopener noreferrer"
               aria-label={t('place.detailLabel', { name: place.name })}
             >
-              {t('place.detail')} <ExternalLink className="size-3" aria-hidden="true" />
+              {t('place.google')} <ExternalLink className="size-3" aria-hidden="true" />
             </a>
           ) : null}
         </div>

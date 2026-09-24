@@ -7,11 +7,12 @@ import { demoOrigin } from '../../../../../server/demo';
 
 afterEach(cleanup);
 
-it('Google 장소 상세 페이지를 HTTPS 새 창 링크로 제공한다', () => {
+it('장소 상세를 네이버와 Google 지도 HTTPS 새 창 링크로 제공한다', () => {
   renderWithI18n(
     <PlaceCard
       place={{
         ...demoOrigin,
+        id: 'google:test-place',
         name: '확인할 장소',
         url: 'https://www.google.com/maps/search/?api=1&query=place&query_place_id=test-place',
       }}
@@ -27,6 +28,12 @@ it('Google 장소 상세 페이지를 HTTPS 새 창 링크로 제공한다', () 
   );
   expect(link.getAttribute('target')).toBe('_blank');
   expect(link.getAttribute('rel')).toContain('noopener');
+  const naverLink = screen.getByRole('link', { name: '확인할 장소 네이버 지도에서 찾기 (새 창)' });
+  expect(decodeURIComponent(naverLink.getAttribute('href') ?? '')).toBe(
+    `https://map.naver.com/p/search/${demoOrigin.address} 확인할 장소`,
+  );
+  expect(naverLink.getAttribute('target')).toBe('_blank');
+  expect(naverLink.getAttribute('rel')).toContain('noopener');
   expect(screen.getByText(demoOrigin.address)).toBeTruthy();
 });
 

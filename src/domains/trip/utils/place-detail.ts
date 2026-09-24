@@ -1,3 +1,11 @@
+import type { Place } from '../models/model-trip';
+
+export function getNaverPlaceUrl(place: Place): string | null {
+  if (place.id.startsWith('demo-') || !place.url) return null;
+  const query = [place.address, place.name].filter(Boolean).join(' ');
+  return `https://map.naver.com/p/search/${encodeURIComponent(query)}`;
+}
+
 export function getPlaceDetailUrl(url: string): string | null {
   try {
     const parsed = new URL(url);

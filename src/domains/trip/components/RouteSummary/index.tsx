@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { Itinerary, Place } from '../../models/model-trip';
 import { formatDistance } from '../../utils/route-order';
-import { getKakaoRouteUrl } from '../../utils/kakao-route-url';
+import { getNaverRouteUrl } from '../../utils/naver-route-url';
 import { getGoogleRouteUrl } from '../../utils/google-route-url';
 import { useI18n } from '@/common/i18n/components/I18nProvider';
 import { localizeTripText } from '../../i18n/localize-trip-text';
@@ -158,16 +158,16 @@ export function RouteSummary({
                           className="h-auto min-w-0 whitespace-normal px-2 py-2 text-center text-xs"
                         >
                           <a
-                            href={getKakaoRouteUrl(leg)}
+                            href={getNaverRouteUrl(leg)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label={t('route.kakaoLabel', {
+                            aria-label={t('route.naverLabel', {
                               index: index + 1,
                               from: leg.from.name,
                               to: leg.to.name,
                             })}
                           >
-                            {t('route.kakao', { index: index + 1 })} <ExternalLink size={13} />
+                            {t('route.naver', { index: index + 1 })} <ExternalLink size={13} />
                           </a>
                         </Button>
                         <Button

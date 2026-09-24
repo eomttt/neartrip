@@ -64,7 +64,7 @@ export const travelGuide = {
         title: '6. neartrip의 역할과 정보의 한계',
         paragraphs: [
           'neartrip은 한국 여행 중 숙소 주변의 음식점, 카페, 관광지와 술집 후보를 고르고 방문 순서를 비교하는 도구입니다. 카카오 장소·길찾기와 공공 관광정보를 이용하며, 장소의 운영 상태를 직접 실시간 확인하거나 예약을 대신하지 않습니다. 이 가이드는 서비스 사용 방법과 계획 예시를 설명하며 특정 업소의 방문 후기나 추천 순위가 아닙니다.',
-          '예시 모드는 가상 장소와 개략 동선을 이용해 조작 방법을 체험하는 화면입니다. 실제 장소와 이동 정보로 사용하지 마세요. 실제 계획에서는 각 구간의 카카오맵 길찾기를 열어 확인하고, 출발 직전 운영 정보와 귀가 방법을 다시 점검하세요. 검색·지도 화면에는 광고를 넣지 않으며, 이 여행 가이드에는 Google 광고가 표시될 수 있습니다.',
+          '예시 모드는 가상 장소와 개략 동선을 이용해 조작 방법을 체험하는 화면입니다. 실제 장소와 이동 정보로 사용하지 마세요. 실제 계획에서는 각 구간의 네이버 지도나 Google Maps 길찾기를 열어 확인하고, 출발 직전 운영 정보와 귀가 방법을 다시 점검하세요. 검색·지도 화면에는 광고를 넣지 않으며, 이 여행 가이드에는 Google 광고가 표시될 수 있습니다.',
         ],
       },
     ],
@@ -141,7 +141,7 @@ export const travelGuide = {
         title: '6. What neartrip helps with, and its limits',
         paragraphs: [
           'neartrip helps travelers in Korea choose nearby food, cafés, sights, and drinks and compare a visiting order. It uses Kakao place and route information and public tourism data. It does not independently verify live opening conditions or make reservations. This guide explains how to use the service and how to think through a plan; it is not a firsthand venue review or a ranking of businesses.',
-          'Demo mode uses fictional places and illustrative routes so you can try the controls. Do not use those examples as real destinations or directions. For a real trip, open the linked Kakao Map directions for each leg and check opening information and your journey home before setting out. Search and map screens do not carry ads; Google ads may appear on this travel guide.',
+          'Demo mode uses fictional places and illustrative routes so you can try the controls. Do not use those examples as real destinations or directions. For a real trip, open the linked NAVER Map or Google Maps directions for each leg and check opening information and your journey home before setting out. Search and map screens do not carry ads; Google ads may appear on this travel guide.',
         ],
       },
     ],
